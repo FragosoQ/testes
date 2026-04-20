@@ -146,7 +146,7 @@ main {
 ══════════════════════════════════════ */
 .left {
   display: grid;
-  grid-template-rows: 1fr 1px 1fr;
+  grid-template-rows: 1.7fr 1px 0.8fr;
   border-right: 1px solid rgba(255,255,255,0.12);
 }
 
@@ -156,7 +156,7 @@ main {
 .hero {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .hero-evolucao {
@@ -166,7 +166,7 @@ main {
   justify-content: center;
   border-right: 1px solid rgba(255,255,255,0.08);
   position: relative;
-  overflow: hidden;
+  overflow: visible;
   background: rgba(0,20,50,0.2);
 }
 
@@ -328,16 +328,6 @@ main {
   overflow: hidden;
 }
 
-.globe-section::before {
-  content: 'PERU';
-  position: absolute;
-  bottom: 20px; left: 50%;
-  transform: translateX(-50%);
-  font-size: 16px; font-weight: 700; letter-spacing: 6px;
-  color: rgba(0,255,135,0.7);
-  text-transform: uppercase;
-}
-
 /* PRAZO */
 .prazo-section {
   padding: 24px 28px;
@@ -479,7 +469,7 @@ footer {
 
       <!-- HERO -->
       <div class="hero">
-        <div class="hero-evolucao" style="align-items:center;justify-content:center;padding:0;overflow:hidden;position:relative;" id="globeContainer">
+        <div class="hero-evolucao" style="align-items:center;justify-content:center;padding:0;overflow:visible;position:relative;" id="globeContainer">
           <!-- Three.js globe renders here -->
         </div>
 
@@ -650,7 +640,7 @@ updateTime(); setInterval(updateTime, 1000);
   renderer.setClearColor(0x000000, 0);
   container.appendChild(renderer.domElement);
 
-  const RADIUS = 140;
+  const RADIUS = 140 * 0.96;
   const globeGroup = new THREE.Group();
   scene.add(globeGroup);
 
