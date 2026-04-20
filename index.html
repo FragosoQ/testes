@@ -457,9 +457,7 @@ footer {
   <!-- HEADER -->
   <header>
     <div class="h-logo">
-      <a href="index2.html" aria-label="Ir para a página index2" style="display:inline-block;line-height:0;">
-        <img src="https://res.cloudinary.com/djxxk3ipz/image/upload/v1776687956/somengil_logo_white_wzwrm0.png" alt="Somengil" style="height:36px;width:auto;display:block;">
-      </a>
+      <img src="https://res.cloudinary.com/djxxk3ipz/image/upload/v1776687956/somengil_logo_white_wzwrm0.png" alt="Somengil" style="height:36px;width:auto;display:block;">
     </div>
 
     <div class="h-center">
@@ -670,9 +668,9 @@ updateTime(); setInterval(updateTime, 1000);
     varying vec3 vNormal;
     varying vec2 vUv;
     void main() {
-      vec3 diffuse = texture2D(globeTexture, vUv).xyz;
+      vec3 diffuse = texture2D(globeTexture, vUv).xyz * 0.8;
       float intensity = 1.05 - dot(vNormal, vec3(0.0,0.0,1.0));
-      vec3 atmosphere = vec3(1.0,1.0,1.0) * pow(intensity, 3.0);
+      vec3 atmosphere = vec3(1.0,1.0,1.0) * pow(intensity, 3.0) * 0.4;
       gl_FragColor = vec4(diffuse + atmosphere, 1.04);
     }`;
 
@@ -752,12 +750,24 @@ updateTime(); setInterval(updateTime, 1000);
   }
 
   // ── DOTS grid (from points.js) ──
+  // toXYZ para os pontos da grelha (usa sinais negativos como no points.js original)
   function toXYZ(lat, lon, r) {
     const phi   = (90 - lat)  * Math.PI / 180;
     const theta = (180 - lon) * Math.PI / 180;
     return new THREE.Vector3(
       -r * Math.sin(phi) * Math.cos(theta),
       -r * Math.cos(phi),
+      -r * Math.sin(phi) * Math.sin(theta)
+    );
+  }
+
+  // coordinateToPosition para marcadores (do utils.js original)
+  function coordToPos(lat, lon, r) {
+    const phi   = (90 - lat)  * Math.PI / 180;
+    const theta = (180 - lon) * Math.PI / 180;
+    return new THREE.Vector3(
+      -r * Math.sin(phi) * Math.cos(theta),
+       r * Math.cos(phi),
       -r * Math.sin(phi) * Math.sin(theta)
     );
   }
@@ -788,7 +798,7 @@ updateTime(); setInterval(updateTime, 1000);
 
   // ── MARKERS ──
   function addMarker(lat, lon, color) {
-    const pos  = toXYZ(lat, lon, RADIUS + 3);
+    const pos  = coordToPos(lat, lon, RADIUS + 3);
     const mesh = new THREE.Mesh(
       new THREE.SphereGeometry(3.5, 12, 12),
       new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.95 })
@@ -811,8 +821,8 @@ updateTime(); setInterval(updateTime, 1000);
 
   // ── ARC Portugal → Peru ──
   function makeArc(latA, lonA, latB, lonB) {
-    const start = toXYZ(latA, lonA, RADIUS + 3);
-    const end   = toXYZ(latB, lonB, RADIUS + 3);
+    const start = coordToPos(latA, lonA, RADIUS + 3);
+    const end   = coordToPos(latB, lonB, RADIUS + 3);
     const mid   = start.clone().add(end).multiplyScalar(0.5).normalize().multiplyScalar(RADIUS + 80);
     const curve = new THREE.QuadraticBezierCurve3(start, mid, end);
     const pts   = curve.getPoints(100);
@@ -824,16 +834,30 @@ updateTime(); setInterval(updateTime, 1000);
   const arc = makeArc(38.7, -9.1, -9.2, -75.0);
   globeGroup.add(arc.line);
 
-  // Travelling dot on arc
+  // Travelling dot on arc — blue with glow
   const travDot = new THREE.Mesh(
     new THREE.SphereGeometry(2.8, 8, 8),
-    new THREE.MeshBasicMaterial({ color: 0x00ff87 })
+    new THREE.MeshBasicMaterial({ color: 0x00aaff })
   );
   globeGroup.add(travDot);
 
+  // Glow halo around travelling dot
+  const travGlow = new THREE.Mesh(
+    new THREE.SphereGeometry(5.5, 8, 8),
+    new THREE.MeshBasicMaterial({ color: 0x0066ff, transparent: true, opacity: 0.25, blending: THREE.AdditiveBlending, depthWrite: false })
+  );
+  travDot.add(travGlow);
+
+  const travGlow2 = new THREE.Mesh(
+    new THREE.SphereGeometry(9, 8, 8),
+    new THREE.MeshBasicMaterial({ color: 0x0044cc, transparent: true, opacity: 0.1, blending: THREE.AdditiveBlending, depthWrite: false })
+  );
+  travDot.add(travGlow2);
+
   // ── Initial rotation: centre midpoint Portugal–Peru ──
-  // Portugal lon = -9.1° → to face camera we negate and add 90° offset for Three.js sphere mapping
-  globeGroup.rotation.y = THREE.MathUtils.degToRad(9.1 - 90);
+  // Portugal lon = -9.1° → coordToPos usa theta = (180 - lon) → theta = 189.1°
+  // Para centrar Portugal na câmara (câmara em Z+), precisamos de rotation.y = -(180 - 9.1) * PI/180
+  globeGroup.rotation.y = THREE.MathUtils.degToRad(-(180 - 9.1));
   globeGroup.rotation.x = THREE.MathUtils.degToRad(20);
 
   // ── Periodic 360° rotation every 5 min ──
@@ -866,7 +890,7 @@ updateTime(); setInterval(updateTime, 1000);
     peruRing.scale.set(p, p, 1);
 
     // Slow continuous rotation
-    if (!isRotating) globeGroup.rotation.y += 0.0015;
+    if (!isRotating) globeGroup.rotation.y -= 0.0015;
 
     // 360° rotation
     if (isRotating) {
