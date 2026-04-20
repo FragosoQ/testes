@@ -13,6 +13,7 @@
         
         :root {
             --brand-cyan: rgb(3, 190, 252);
+            --full-cyan: #03bafc;
         }
 
         body {
@@ -85,7 +86,6 @@
 
         #globe-3d-container {
             position: absolute;
-            /* AJUSTE: Movido 4% para a esquerda (de -200px para -140px aproximadamente ou ajuste percentual) */
             right: -140px; 
             top: 50%; 
             transform: translateY(-50%);
@@ -112,6 +112,15 @@
             transform: rotate(180deg);
         }
 
+        /* Estilo para 100% no pie chart */
+        .stroke-full-cyan {
+            stroke: var(--full-cyan);
+        }
+        .text-full-cyan {
+            color: var(--full-cyan);
+            fill: var(--full-cyan);
+        }
+
     </style>
 </head>
 <body>
@@ -122,7 +131,7 @@
             <img src="https://res.cloudinary.com/djxxk3ipz/image/upload/v1776687956/somengil_logo_white_wzwrm0.png" alt="Somengil Logo" class="h-12 w-auto object-contain">
         </div>
 
-        <div class="data-card p-4 rounded-2xl border-l-4 border-blue-500">
+        <div class="data-card p-4 rounded-2xl border-none">
             <p class="text-blue-200/50 text-[10px] font-black uppercase tracking-[0.3em]">Ordem Ativa</p>
             <h2 class="text-xl font-black text-white">OP_149_2026</h2>
         </div>
@@ -132,7 +141,7 @@
             <h2 class="text-2xl font-black text-brand-cyan">46%</h2>
         </div>
 
-        <div class="data-card p-4 rounded-2xl text-center border-l-4 border-emerald-500">
+        <div class="data-card p-4 rounded-2xl text-center">
             <p class="text-blue-200/50 text-[10px] font-black uppercase tracking-[0.3em]">Folga de Entrega</p>
             <h2 class="text-2xl font-black text-emerald-400">1862 <span class="text-xs opacity-50 uppercase font-bold">Dias</span></h2>
         </div>
@@ -178,22 +187,22 @@
 
             <div class="data-card p-5 rounded-[1.5rem] flex-1 min-h-0">
                 <h3 class="text-white text-[9px] font-black uppercase mb-3 opacity-50 tracking-[0.4em]">Registos de Componentes Críticos</h3>
-                <div class="grid grid-cols-2 gap-2 overflow-hidden">
-                    <div class="bg-black/30 p-2.5 rounded-lg border border-white/5">
-                        <p class="text-[8px] text-blue-300/50 uppercase font-black">Variador</p>
-                        <p class="text-[10px] font-bold text-white truncate">NORD SK 550P (0.75kW)</p>
+                <div class="grid grid-cols-2 gap-2 overflow-hidden h-full">
+                    <div class="bg-black/30 p-4 rounded-xl border border-white/5 flex flex-col justify-center">
+                        <p class="text-[9px] text-blue-300/50 uppercase font-black mb-1">Variador</p>
+                        <p class="text-[11px] font-bold text-white truncate">NORD SK 550P (0.75kW)</p>
                     </div>
-                    <div class="bg-black/30 p-2.5 rounded-lg border border-white/5">
-                        <p class="text-[8px] text-blue-300/50 uppercase font-black">Bomba Lavagem</p>
-                        <p class="text-[10px] font-bold text-white truncate">22SV08F1506T/D ELP UL</p>
+                    <div class="bg-black/30 p-4 rounded-xl border border-white/5 flex flex-col justify-center">
+                        <p class="text-[9px] text-blue-300/50 uppercase font-black mb-1">Bomba Lavagem</p>
+                        <p class="text-[11px] font-bold text-white truncate">22SV08F1506T/D ELP UL</p>
                     </div>
-                    <div class="bg-black/30 p-2.5 rounded-lg border border-white/5">
-                        <p class="text-[8px] text-blue-300/50 uppercase font-black">Bomba Enxaguamento</p>
-                        <p class="text-[10px] font-bold text-white truncate">1HM04S03T6PVBE</p>
+                    <div class="bg-black/30 p-4 rounded-xl border border-white/5 flex flex-col justify-center">
+                        <p class="text-[9px] text-blue-300/50 uppercase font-black mb-1">Bomba Enxaguamento</p>
+                        <p class="text-[11px] font-bold text-white truncate">1HM04S03T6PVBE</p>
                     </div>
-                    <div class="bg-black/30 p-2.5 rounded-lg border border-white/5">
-                        <p class="text-[8px] text-emerald-500/50 uppercase font-black">Corte Geral</p>
-                        <p class="text-[10px] font-bold text-emerald-400 truncate">SWCG02003025</p>
+                    <div class="bg-black/30 p-4 rounded-xl border border-white/5 flex flex-col justify-center">
+                        <p class="text-[9px] text-emerald-500/50 uppercase font-black mb-1">Corte Geral</p>
+                        <p class="text-[11px] font-bold text-emerald-400 truncate">SWCG02003025</p>
                     </div>
                 </div>
             </div>
@@ -204,8 +213,8 @@
                 <div class="flex justify-between items-center mb-6">
                     <h3 class="text-white text-[10px] font-black uppercase tracking-[0.5em]">Fluxo de Produção - Factory</h3>
                     <div class="flex gap-4">
-                        <span class="flex items-center gap-2 text-[8px] font-black uppercase text-brand-cyan">
-                            <span class="w-2 h-2 bg-brand-cyan rounded-full shadow-[0_0_8px_var(--brand-cyan)]"></span> Concluído
+                        <span class="flex items-center gap-2 text-[8px] font-black uppercase text-[#03bafc]">
+                            <span class="w-2 h-2 bg-[#03bafc] rounded-full shadow-[0_0_8px_#03bafc]"></span> Concluído
                         </span>
                         <span class="flex items-center gap-2 text-[8px] font-black uppercase text-amber-500">
                             <span class="w-2 h-2 bg-amber-500 rounded-full shadow-[0_0_8px_rgba(245,158,11,0.8)]"></span> Em Curso
@@ -218,8 +227,8 @@
                         <div class="relative">
                             <svg class="progress-circle w-32 h-32" viewBox="0 0 40 40">
                                 <circle class="bg" cx="20" cy="20" r="17"></circle>
-                                <circle class="stroke-brand-cyan" cx="20" cy="20" r="17" style="stroke-dasharray: 106.8; stroke-dashoffset: 0;"></circle>
-                                <text x="20" y="21" class="percentage-text text-brand-cyan text-[6px]" transform="rotate(90 20 20)">100%</text>
+                                <circle class="stroke-full-cyan" cx="20" cy="20" r="17" style="stroke-dasharray: 106.8; stroke-dashoffset: 0;"></circle>
+                                <text x="20" y="21" class="percentage-text text-full-cyan text-[6px]" transform="rotate(90 20 20)">100%</text>
                             </svg>
                         </div>
                         <span class="text-[10px] font-black uppercase text-white tracking-[0.2em]">Cuba</span>
@@ -240,8 +249,8 @@
                         <div class="relative">
                             <svg class="progress-circle w-32 h-32" viewBox="0 0 40 40">
                                 <circle class="bg" cx="20" cy="20" r="17"></circle>
-                                <circle class="stroke-brand-cyan" cx="20" cy="20" r="17" style="stroke-dasharray: 106.8; stroke-dashoffset: 0;"></circle>
-                                <text x="20" y="21" class="percentage-text text-brand-cyan text-[6px]" transform="rotate(90 20 20)">100%</text>
+                                <circle class="stroke-full-cyan" cx="20" cy="20" r="17" style="stroke-dasharray: 106.8; stroke-dashoffset: 0;"></circle>
+                                <text x="20" y="21" class="percentage-text text-full-cyan text-[6px]" transform="rotate(90 20 20)">100%</text>
                             </svg>
                         </div>
                         <span class="text-[10px] font-black uppercase text-white tracking-[0.2em]">Interior</span>
@@ -281,12 +290,12 @@
                     </div>
                 </div>
                 
-                <div class="mt-4 flex items-center bg-black/60 rounded-xl border border-amber-500/30 overflow-hidden shrink-0">
-                    <div class="bg-amber-500/20 px-3 py-2 flex items-center justify-center border-r border-amber-500/20">
-                        <p class="text-amber-500 font-black text-[10px] uppercase vertical-text tracking-[0.5em] px-1">Nota</p>
+                <div class="mt-4 flex items-center bg-black/60 rounded-xl border border-amber-500/30 overflow-hidden shrink-0 h-10">
+                    <div class="bg-amber-500/20 px-3 h-full flex items-center justify-center border-r border-amber-500/20">
+                        <p class="text-amber-500 font-black text-[8px] uppercase tracking-[0.3em] px-1">Nota</p>
                     </div>
-                    <div class="px-5 py-3">
-                        <p class="text-base leading-tight text-white font-black uppercase italic tracking-widest">
+                    <div class="px-5 flex items-center h-full">
+                        <p class="text-[12px] leading-none text-white font-black uppercase italic tracking-widest">
                             DESCOLADA + AFUNDADA + HMI LADO ANÃO
                         </p>
                     </div>
@@ -411,12 +420,17 @@
                 }
             });
 
+            // Variável para armazenar a curva para animação do ponto
+            let activeCurve = null;
+
             function createArc(start, end) {
                 const mid = start.clone().lerp(end, 0.5);
                 const midLen = start.length();
-                mid.normalize().multiplyScalar(midLen * 1.35); 
+                mid.normalize().multiplyScalar(midLen * 1.8); 
 
                 const curve = new THREE.QuadraticBezierCurve3(start, mid, end);
+                activeCurve = curve; // Guardar referência para o cometa
+
                 const points = curve.getPoints(64);
                 const geometry = new THREE.BufferGeometry().setFromPoints(points);
                 const material = new THREE.LineBasicMaterial({ 
@@ -430,19 +444,49 @@
             const routeLine = createArc(ptPos, pePos);
             globeGroup.add(routeLine);
 
+            // CRIAÇÃO DO COMETA (PONTO COM GLOW)
+            const cometGeometry = new THREE.SphereGeometry(2.5, 16, 16);
+            const cometMaterial = new THREE.MeshBasicMaterial({ 
+                color: 0x03bEfc,
+                transparent: true,
+                opacity: 1
+            });
+            const comet = new THREE.Mesh(cometGeometry, cometMaterial);
+            
+            // Luz pontual para o efeito de glow sobre o globo
+            const cometLight = new THREE.PointLight(0x03bEfc, 2, 50);
+            comet.add(cometLight);
+            globeGroup.add(comet);
+
             globeGroup.rotation.y = 1.95;
             globeGroup.rotation.x = 0.25;
 
             let time = 0;
+            let cometProgress = 0;
+
             function animate() {
                 requestAnimationFrame(animate);
                 globeGroup.rotation.y -= 0.001;
                 
                 time += 0.05;
+                
+                // Animação do Anel de Destino
                 if(window.destRing) {
                     const s = 1 + Math.sin(time) * 0.4;
                     window.destRing.scale.set(s, s, 1);
                     window.destRing.material.opacity = 0.8 - (Math.sin(time) * 0.4);
+                }
+
+                // Animação do Cometa ao longo do arco
+                if(activeCurve) {
+                    cometProgress += 0.005; // Velocidade do ponto
+                    if (cometProgress > 1) cometProgress = 0; // Loop
+
+                    const pos = activeCurve.getPointAt(cometProgress);
+                    comet.position.copy(pos);
+                    
+                    // Fazer o brilho variar ligeiramente para parecer "vivo"
+                    cometLight.intensity = 1.5 + Math.sin(time * 2) * 0.5;
                 }
 
                 renderer.render(scene, camera);
