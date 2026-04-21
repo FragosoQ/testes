@@ -14,6 +14,11 @@
   --amber: #ffaa00;
   --red:   #ff3b3b;
   --bg:    #03060d;
+
+  /* Alturas de referência — centralizam os números mágicos */
+  --header-h: clamp(52px, 6vh, 70px);
+  --footer-h: clamp(46px, 5.5vh, 60px);
+  --side-pad: clamp(20px, 3vw, 48px);
 }
 
 html, body {
@@ -30,9 +35,11 @@ html, body {
 ══════════════════════════════════════ */
 .shell {
   display: grid;
-  grid-template-rows: 70px 1fr 60px;
+  grid-template-rows: var(--header-h) 1fr var(--footer-h);
   height: 100vh;
+  height: 100dvh; /* usa dvh quando disponível para evitar saltos em mobile */
   position: relative;
+  min-height: 0;
 }
 
 /* ══════════════════════════════════════
@@ -75,59 +82,48 @@ header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 48px;
+  padding: 0 var(--side-pad);
   background: rgba(0,20,40,0.35);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid rgba(255,255,255,0.15);
+  min-height: 0;
 }
 
 .h-logo {
   display: flex; align-items: center; gap: 14px;
 }
-
-.h-logo-icon {
-  width: 36px; height: 36px;
-  border: 1.5px solid rgba(255,255,255,0.3);
-  border-radius: 8px;
-  display: flex; align-items: center; justify-content: center;
-  position: relative;
-  overflow: hidden;
-  background: rgba(255,255,255,0.08);
-}
-.h-logo-icon::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
-}
-.h-logo-icon svg { position: relative; z-index: 1; }
+.h-logo img { height: clamp(26px, 4vh, 36px); width: auto; display: block; }
 
 .h-brand {
   font-family: 'Bebas Neue', sans-serif;
-  font-size: 36px; letter-spacing: 6px; color: #fff;
+  font-size: clamp(24px, 3vh, 36px);
+  letter-spacing: 6px; color: #fff;
   text-shadow: 0 0 30px rgba(255,255,255,0.3);
 }
 
 .h-center {
   position: absolute; left: 50%; transform: translateX(-50%);
-  display: flex; align-items: center; gap: 20px;
+  display: flex; align-items: center; gap: clamp(10px, 1.5vw, 20px);
 }
 
 .h-badge {
-  font-size: 16px; font-weight: 700; letter-spacing: 4px;
+  font-size: clamp(12px, 1.6vh, 16px); font-weight: 700; letter-spacing: 4px;
   text-transform: uppercase; color: rgba(255,255,255,0.75);
+  white-space: nowrap;
 }
 
-.h-sep { width: 5px; height: 5px; border-radius: 50%; background: rgba(255,255,255,0.4); }
+.h-sep { width: 5px; height: 5px; border-radius: 50%; background: rgba(255,255,255,0.4); flex-shrink: 0; }
 
 .h-op {
   font-family: 'Bebas Neue', sans-serif;
-  font-size: 26px; letter-spacing: 3px; color: #fff;
+  font-size: clamp(18px, 2.6vh, 26px); letter-spacing: 3px; color: #fff;
   text-shadow: 0 0 20px rgba(255,255,255,0.5);
+  white-space: nowrap;
 }
 
 .h-time {
-  font-size: 20px; letter-spacing: 2px; color: rgba(255,255,255,0.85);
+  font-size: clamp(14px, 2vh, 20px); letter-spacing: 2px; color: rgba(255,255,255,0.85);
+  white-space: nowrap;
 }
 
 /* ══════════════════════════════════════
@@ -136,18 +132,25 @@ header {
 main {
   position: relative; z-index: 2;
   display: grid;
-  grid-template-columns: 1fr 475px;
+  grid-template-columns: 1fr clamp(340px, 32vw, 475px);
   gap: 0;
   overflow: hidden;
+  min-height: 0;
+  min-width: 0;
 }
 
 /* ══════════════════════════════════════
    LEFT PANEL
+   Mudança principal: em vez de 1.2fr / 1px / 0.8fr (que pode esmagar zonas),
+   as zonas recebem auto (pelo conteúdo) e o hero recebe 1fr (enche o resto).
+   Assim, quando a altura encolhe, é o hero que encolhe primeiro — e nunca as zonas.
 ══════════════════════════════════════ */
 .left {
   display: grid;
-  grid-template-rows: 1.2fr 1px 0.8fr;
+  grid-template-rows: minmax(0, 1fr) 1px auto;
   border-right: 1px solid rgba(255,255,255,0.12);
+  min-height: 0;
+  min-width: 0;
 }
 
 .divider-h { background: rgba(255,255,255,0.1); }
@@ -156,11 +159,12 @@ main {
 .hero {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  overflow: visible;
+  overflow: hidden;
+  min-height: 0;
 }
 
 .hero-evolucao {
-  padding: 32px 40px;
+  padding: clamp(16px, 3vh, 32px) clamp(20px, 3vw, 40px);
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -168,6 +172,8 @@ main {
   position: relative;
   overflow: visible;
   background: rgba(0,20,50,0.2);
+  min-height: 0;
+  min-width: 0;
 }
 
 .hero-evolucao::before {
@@ -208,71 +214,93 @@ main {
   margin-top: 12px; position: relative; z-index: 1;
 }
 
-/* HERO RIGHT — IDENTIDADE */
+/* HERO RIGHT — IDENTIDADE
+   Fontes reduzidas e fluidas para poupar altura vertical.
+*/
 .hero-id {
-  padding: 32px 40px;
+  padding: clamp(16px, 3vh, 32px) clamp(20px, 3vw, 40px);
   display: flex; flex-direction: column; justify-content: center;
   gap: 0;
   background: rgba(0,10,30,0.15);
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
 }
 
-.id-modelo-label {
-  font-size: 40px; font-weight: 700; letter-spacing: 5px;
+.id-modelo-label,
+.id-cliente-label {
+  font-size: clamp(18px, 2.4vh, 32px);
+  font-weight: 700; letter-spacing: 5px;
   text-transform: uppercase; color: rgba(255,255,255,0.7);
-  margin-bottom: 10px;
+  margin-bottom: clamp(4px, 0.8vh, 10px);
 }
+
 .id-modelo {
   font-family: 'Bebas Neue', sans-serif;
-  font-size: clamp(68px, 5.5vw, 92px);
-  letter-spacing: 2px; color: #fff; line-height: 1; margin-bottom: 8px;
-}
-.id-lote {
-  font-size: 46px; color: rgba(255,255,255,0.8);
-  letter-spacing: 1px; margin-bottom: 36px;
+  font-size: clamp(42px, 5.5vw, 92px);
+  letter-spacing: 2px; color: #fff;
+  line-height: 1;
+  margin-bottom: clamp(4px, 0.8vh, 8px);
 }
 
-.id-cliente-label {
-  font-size: 40px; font-weight: 700; letter-spacing: 5px;
-  text-transform: uppercase; color: rgba(255,255,255,0.7);
-  margin-bottom: 10px;
+.id-lote {
+  font-size: clamp(22px, 3.6vh, 46px);
+  color: rgba(255,255,255,0.8);
+  letter-spacing: 1px;
+  margin-bottom: clamp(14px, 3vh, 36px);
 }
+
 .id-cliente {
-  font-size: clamp(50px, 3.2vw, 64px); font-weight: 700;
+  font-size: clamp(28px, 3.2vw, 64px);
+  font-weight: 700;
   text-transform: uppercase; letter-spacing: 1px;
-  color: #fff; line-height: 1.1; margin-bottom: 10px;
+  color: #fff; line-height: 1.1;
+  margin-bottom: clamp(4px, 0.8vh, 10px);
 }
+
 .id-pais {
-  display: flex; align-items: center; gap: 14px;
+  display: flex; align-items: center; gap: clamp(8px, 1vw, 14px);
 }
-.id-flag { font-size: 64px; line-height: 1; }
+.id-flag {
+  font-size: clamp(32px, 5vh, 64px);
+  line-height: 1;
+}
 .id-pais-info {
-  font-size: 44px; letter-spacing: 2px;
+  font-size: clamp(20px, 3.2vh, 44px);
+  letter-spacing: 2px;
   color: rgba(255,255,255,0.8); text-transform: uppercase;
 }
 
-/* BOTTOM LEFT — ZONAS */
+/* BOTTOM LEFT — ZONAS
+   Paddings e fontes agora fluidos para garantir que cabem sempre.
+*/
 .zonas-panel {
-  padding: 28px 40px;
+  padding: clamp(14px, 2.4vh, 28px) clamp(20px, 3vw, 40px);
   display: flex; flex-direction: column; gap: 0;
   background: rgba(0,15,40,0.2);
+  min-height: 0;
+  min-width: 0;
 }
 
 .zonas-title {
-  font-size: 22px; font-weight: 700; letter-spacing: 5px;
+  font-size: clamp(16px, 2.2vh, 22px);
+  font-weight: 700; letter-spacing: 5px;
   text-transform: uppercase; color: rgba(255,255,255,0.75);
-  margin-bottom: 16px;
+  margin-bottom: clamp(10px, 1.6vh, 16px);
 }
 
 .zonas-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 16px 24px;
+  gap: clamp(10px, 1.6vh, 16px) clamp(14px, 2vw, 24px);
   flex: 1;
+  min-height: 0;
 }
 
 .zona-card {
-  display: flex; flex-direction: column; gap: 8px;
-  padding: 16px 18px;
+  display: flex; flex-direction: column;
+  gap: clamp(4px, 0.8vh, 8px);
+  padding: clamp(10px, 1.6vh, 16px) clamp(12px, 1.4vw, 18px);
   border: 1px solid rgba(255,255,255,0.12);
   border-radius: 10px;
   background: rgba(255,255,255,0.07);
@@ -280,6 +308,7 @@ main {
   position: relative;
   overflow: hidden;
   transition: border-color .3s, background .3s;
+  min-width: 0;
 }
 
 .zona-card.done  { border-color: rgba(0,255,135,0.4);  background: rgba(0,255,135,0.08); }
@@ -287,8 +316,12 @@ main {
 .zona-card.empty { border-color: rgba(255,255,255,0.06); background: rgba(0,0,0,0.15); }
 
 .zona-card-label {
-  font-size: 22px; font-weight: 700; letter-spacing: 3px;
+  font-size: clamp(14px, 1.8vh, 22px);
+  font-weight: 700; letter-spacing: 3px;
   text-transform: uppercase; color: rgba(255,255,255,0.75);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .zona-card.done  .zona-card-label { color: #00ff87; }
 .zona-card.going .zona-card-label { color: #fff; }
@@ -296,11 +329,12 @@ main {
 
 .zona-card-pct {
   font-family: 'Bebas Neue', sans-serif;
-  font-size: 72px; line-height: 1; letter-spacing: 1px;
+  font-size: clamp(38px, 6vh, 72px);
+  line-height: 1; letter-spacing: 1px;
 }
 
 .zona-card-bar {
-  height: 10px;
+  height: clamp(6px, 1vh, 10px);
   background: rgba(255,255,255,0.12);
   border-radius: 5px; overflow: hidden;
 }
@@ -315,6 +349,8 @@ main {
   overflow: hidden;
   background: rgba(0,10,30,0.25);
   backdrop-filter: blur(4px);
+  min-height: 0;
+  min-width: 0;
 }
 
 /* GLOBO / EVOLUÇÃO */
@@ -326,42 +362,50 @@ main {
   position: relative;
   border-bottom: 1px solid rgba(255,255,255,0.1);
   overflow: hidden;
+  min-height: 0;
+  padding: clamp(10px, 1.5vh, 20px) 0;
 }
 
 /* PRAZO */
 .prazo-section {
-  padding: 24px 28px;
+  padding: clamp(14px, 2.2vh, 24px) clamp(18px, 2vw, 28px);
   border-bottom: 1px solid rgba(255,255,255,0.1);
 }
 
 .prazo-top {
   display: flex; justify-content: space-between; align-items: flex-end;
-  margin-bottom: 12px;
+  margin-bottom: clamp(8px, 1.2vh, 12px);
+  gap: 10px;
 }
 
 .prazo-label {
-  font-size: 16px; font-weight: 700; letter-spacing: 5px;
+  font-size: clamp(13px, 1.6vh, 16px);
+  font-weight: 700; letter-spacing: 5px;
   text-transform: uppercase; color: rgba(255,255,255,0.75);
 }
 
 .prazo-folga {
-  font-size: 18px; letter-spacing: 2px;
+  font-size: clamp(14px, 1.8vh, 18px);
+  letter-spacing: 2px;
   text-transform: uppercase;
+  text-align: right;
 }
 
 .prazo-numbers {
-  display: flex; align-items: baseline; gap: 6px; margin-bottom: 14px;
+  display: flex; align-items: baseline; gap: 6px;
+  margin-bottom: clamp(10px, 1.4vh, 14px);
 }
 .prazo-used {
   font-family: 'Bebas Neue', sans-serif;
-  font-size: 80px; line-height: .9; letter-spacing: -1px;
+  font-size: clamp(52px, 8vh, 80px);
+  line-height: .9; letter-spacing: -1px;
 }
-.prazo-div { font-size: 36px; color: rgba(255,255,255,0.4); font-weight: 300; }
-.prazo-total { font-size: 48px; color: #fff; font-weight: 300; letter-spacing: -1px; }
-.prazo-unit { font-size: 18px; letter-spacing: 3px; text-transform: uppercase; color: rgba(255,255,255,0.75); align-self: flex-end; padding-bottom: 10px; }
+.prazo-div { font-size: clamp(24px, 3.6vh, 36px); color: rgba(255,255,255,0.4); font-weight: 300; }
+.prazo-total { font-size: clamp(32px, 4.8vh, 48px); color: #fff; font-weight: 300; letter-spacing: -1px; }
+.prazo-unit { font-size: clamp(14px, 1.8vh, 18px); letter-spacing: 3px; text-transform: uppercase; color: rgba(255,255,255,0.75); align-self: flex-end; padding-bottom: clamp(6px, 1vh, 10px); }
 
 .prazo-track {
-  height: 12px;
+  height: clamp(8px, 1.2vh, 12px);
   background: rgba(255,255,255,0.12);
   border-radius: 6px; overflow: hidden;
 }
@@ -382,23 +426,25 @@ main {
 
 /* DETALHES */
 .details-section {
-  padding: 20px 28px;
+  padding: clamp(12px, 1.8vh, 20px) clamp(18px, 2vw, 28px);
   display: flex; flex-direction: column; gap: 0;
 }
 
 .detail-row {
   display: flex; justify-content: space-between; align-items: center;
-  padding: 9px 0;
+  padding: clamp(6px, 1vh, 9px) 0;
   border-bottom: 1px solid rgba(255,255,255,0.08);
 }
 .detail-row:last-child { border-bottom: none; }
 
 .d-k {
-  font-size: 14px; font-weight: 700; letter-spacing: 3px;
+  font-size: clamp(11px, 1.4vh, 14px);
+  font-weight: 700; letter-spacing: 3px;
   text-transform: uppercase; color: rgba(255,255,255,0.7);
 }
 .d-v {
-  font-size: 20px; font-weight: 700;
+  font-size: clamp(16px, 2vh, 20px);
+  font-weight: 700;
   color: #fff; letter-spacing: .5px;
 }
 
@@ -408,23 +454,25 @@ main {
 footer {
   position: relative; z-index: 2;
   display: flex; align-items: center; justify-content: space-between;
-  padding: 0 48px;
+  padding: 0 var(--side-pad);
   background: rgba(0,20,40,0.35);
   backdrop-filter: blur(12px);
   border-top: 1px solid rgba(255,255,255,0.12);
+  min-height: 0;
+  gap: 10px;
 }
 
-.f-left { display: flex; align-items: center; gap: 16px; }
-.f-dot  { width: 12px; height: 12px; border-radius: 50%; background: var(--green); box-shadow: 0 0 12px var(--green); }
-.f-status { font-size: 16px; font-weight: 700; letter-spacing: 4px; text-transform: uppercase; color: var(--green); }
-.f-op-label { font-size: 14px; letter-spacing: 3px; text-transform: uppercase; color: rgba(255,255,255,0.75); }
-.f-op { font-size: 22px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #fff; }
+.f-left { display: flex; align-items: center; gap: clamp(8px, 1vw, 16px); min-width: 0; }
+.f-dot  { width: 12px; height: 12px; border-radius: 50%; background: var(--green); box-shadow: 0 0 12px var(--green); flex-shrink: 0; }
+.f-status { font-size: clamp(12px, 1.6vh, 16px); font-weight: 700; letter-spacing: 4px; text-transform: uppercase; color: var(--green); white-space: nowrap; }
+.f-op-label { font-size: clamp(11px, 1.4vh, 14px); letter-spacing: 3px; text-transform: uppercase; color: rgba(255,255,255,0.75); white-space: nowrap; }
+.f-op { font-size: clamp(16px, 2vh, 22px); font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #fff; white-space: nowrap; }
 
-.f-center { text-align: center; }
-.f-nserie { font-size: 18px; letter-spacing: 3px; color: #fff; text-transform: uppercase; }
+.f-center { text-align: center; flex-shrink: 1; min-width: 0; }
+.f-nserie { font-size: clamp(13px, 1.8vh, 18px); letter-spacing: 3px; color: #fff; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-.f-right { text-align: right; }
-.f-date  { font-size: 18px; letter-spacing: 2px; color: rgba(255,255,255,0.85); }
+.f-right { text-align: right; flex-shrink: 0; }
+.f-date  { font-size: clamp(13px, 1.8vh, 18px); letter-spacing: 2px; color: rgba(255,255,255,0.85); white-space: nowrap; }
 
 /* ══════════════════════════════════════
    TOP ACCENT
@@ -432,6 +480,49 @@ footer {
 .top-accent {
   position: fixed; top: 0; left: 0; right: 0; height: 2px; z-index: 100;
   background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6) 30%, rgba(255,255,255,0.6) 70%, transparent);
+}
+
+/* ══════════════════════════════════════
+   MEDIA QUERIES — ajuste em ecrãs baixos
+   Quando a altura da viewport é pequena (típico em 13" touchscreen
+   industrial), encolhemos ainda mais o hero-id e damos prioridade às zonas.
+══════════════════════════════════════ */
+@media (max-height: 820px) {
+  .hero-id { padding-top: 14px; padding-bottom: 14px; }
+  .id-lote { margin-bottom: 14px; }
+  .id-cliente-label { margin-top: 0 !important; }
+}
+
+@media (max-height: 720px) {
+  /* Em ecrãs muito baixos, esconde decorações laterais do globo para poupar GPU */
+  .hero-evolucao::before,
+  .hero-evolucao::after { display: none; }
+
+  /* Labels de ID mais compactas */
+  .id-modelo-label,
+  .id-cliente-label { letter-spacing: 3px; }
+
+  /* Centraliza o hero-id verticalmente para aproveitar espaço */
+  .hero-id { gap: 0; }
+}
+
+@media (max-height: 620px) {
+  /* Em alturas críticas, o hero-id passa de 2 blocos (modelo + cliente)
+     para layout mais apertado e o globo fica um pouco mais pequeno. */
+  .id-lote { margin-bottom: 8px; }
+  .zonas-grid { gap: 8px 12px; }
+  .zona-card { padding: 8px 12px; }
+  .zona-card-pct { font-size: clamp(32px, 5vh, 48px); }
+}
+
+/* Ecrãs estreitos — empilha painéis (útil se a unidade rodar em portrait) */
+@media (max-width: 900px) {
+  main {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr auto;
+  }
+  .left { border-right: none; border-bottom: 1px solid rgba(255,255,255,0.12); }
+  .h-center { display: none; } /* demasiado apertado */
 }
 </style>
 </head>
@@ -447,7 +538,7 @@ footer {
   <!-- HEADER -->
   <header>
     <div class="h-logo">
-      <img src="https://res.cloudinary.com/djxxk3ipz/image/upload/v1776687956/somengil_logo_white_wzwrm0.png" alt="Somengil" style="height:36px;width:auto;display:block;">
+      <img src="https://res.cloudinary.com/djxxk3ipz/image/upload/v1776687956/somengil_logo_white_wzwrm0.png" alt="Somengil">
     </div>
 
     <div class="h-center">
@@ -481,7 +572,7 @@ footer {
             <span class="id-pais-info">Peru · EN · L. América</span>
           </div>
 
-          <div class="id-cliente-label" style="margin-top:20px;">Modelo / Equipamento</div>
+          <div class="id-cliente-label" style="margin-top:clamp(10px,2vh,20px);">Modelo / Equipamento</div>
           <div class="id-modelo">MWS715 SDS EXD DRD</div>
           <div class="id-lote">Lote &nbsp;·&nbsp; 26L_1</div>
         </div>
@@ -501,10 +592,10 @@ footer {
     <div class="right">
 
       <!-- EVOLUÇÃO -->
-      <div class="globe-section" style="flex-direction:column;gap:10px;">
-        <div style="font-size:20px;font-weight:700;letter-spacing:5px;text-transform:uppercase;color:rgba(255,255,255,0.75);">Evolução Global</div>
-        <div id="evNum" style="font-family:'Bebas Neue',sans-serif;font-size:clamp(160px,18vw,260px);line-height:.85;letter-spacing:-2px;">46%</div>
-        <div style="font-size:22px;letter-spacing:4px;color:rgba(255,255,255,0.75);text-transform:uppercase;">Em Curso · ON</div>
+      <div class="globe-section" style="flex-direction:column;gap:clamp(6px,1vh,10px);">
+        <div style="font-size:clamp(14px,1.8vh,20px);font-weight:700;letter-spacing:5px;text-transform:uppercase;color:rgba(255,255,255,0.75);">Evolução Global</div>
+        <div id="evNum" style="font-family:'Bebas Neue',sans-serif;font-size:clamp(110px,16vh,260px);line-height:.85;letter-spacing:-2px;">46%</div>
+        <div style="font-size:clamp(15px,2vh,22px);letter-spacing:4px;color:rgba(255,255,255,0.75);text-transform:uppercase;">Em Curso · ON</div>
       </div>
 
       <!-- PRAZO -->
@@ -550,7 +641,7 @@ footer {
     <div class="f-left">
       <div class="f-dot"></div>
       <span class="f-status">Em Curso</span>
-      <span style="width:1px;height:20px;background:rgba(255,255,255,0.1);margin:0 8px"></span>
+      <span style="width:1px;height:20px;background:rgba(255,255,255,0.1);margin:0 8px;flex-shrink:0;"></span>
       <span class="f-op-label">Operador</span>
       <span class="f-op">Richard · Diogo</span>
     </div>
@@ -644,7 +735,7 @@ updateTime(); setInterval(updateTime, 1000);
   const globeGroup = new THREE.Group();
   scene.add(globeGroup);
 
-  // ── SHADERS (from original globo.txt) ──
+  // ── SHADERS ──
   const globeVS = `
     varying vec3 vNormal;
     varying vec2 vUv;
@@ -696,7 +787,6 @@ updateTime(); setInterval(updateTime, 1000);
     globeMat.uniforms.globeTexture.value = tex;
     globeMat.needsUpdate = true;
   }, undefined, () => {
-    // fallback: solid dark sphere if texture fails
     globeMat.fragmentShader = `
       varying vec3 vNormal;
       void main() {
@@ -724,7 +814,7 @@ updateTime(); setInterval(updateTime, 1000);
   atmMesh.scale.set(1.2, 1.2, 1.2);
   globeGroup.add(atmMesh);
 
-  // ── DISC TEXTURE for points (generated programmatically) ──
+  // ── DISC TEXTURE ──
   function makeDiscTexture() {
     const c = document.createElement('canvas');
     c.width = c.height = 64;
@@ -739,8 +829,7 @@ updateTime(); setInterval(updateTime, 1000);
     return t;
   }
 
-  // ── DOTS grid (from points.js) ──
-  // toXYZ para os pontos da grelha (usa sinais negativos como no points.js original)
+  // ── DOTS grid ──
   function toXYZ(lat, lon, r) {
     const phi   = (90 - lat)  * Math.PI / 180;
     const theta = (180 - lon) * Math.PI / 180;
@@ -751,7 +840,6 @@ updateTime(); setInterval(updateTime, 1000);
     );
   }
 
-  // coordinateToPosition para marcadores (do utils.js original)
   function coordToPos(lat, lon, r) {
     const phi   = (90 - lat)  * Math.PI / 180;
     const theta = (180 - lon) * Math.PI / 180;
@@ -806,10 +894,10 @@ updateTime(); setInterval(updateTime, 1000);
     return ring;
   }
 
-  const ptRing   = addMarker(38.7, -9.1,   0xffffff); // Portugal
-  const peruRing = addMarker(-9.2, -75.0,  0x00ff87); // Peru
+  const ptRing   = addMarker(38.7, -9.1,   0xffffff);
+  const peruRing = addMarker(-9.2, -75.0,  0x00ff87);
 
-  // ── ARC Portugal → Peru ──
+  // ── ARC ──
   function makeArc(latA, lonA, latB, lonB) {
     const start = coordToPos(latA, lonA, RADIUS + 3);
     const end   = coordToPos(latB, lonB, RADIUS + 3);
@@ -824,14 +912,12 @@ updateTime(); setInterval(updateTime, 1000);
   const arc = makeArc(38.7, -9.1, -9.2, -75.0);
   globeGroup.add(arc.line);
 
-  // Travelling dot on arc — blue with glow
   const travDot = new THREE.Mesh(
     new THREE.SphereGeometry(2.8, 8, 8),
     new THREE.MeshBasicMaterial({ color: 0x00aaff })
   );
   globeGroup.add(travDot);
 
-  // Glow halo around travelling dot
   const travGlow = new THREE.Mesh(
     new THREE.SphereGeometry(5.5, 8, 8),
     new THREE.MeshBasicMaterial({ color: 0x0066ff, transparent: true, opacity: 0.25, blending: THREE.AdditiveBlending, depthWrite: false })
@@ -844,13 +930,9 @@ updateTime(); setInterval(updateTime, 1000);
   );
   travDot.add(travGlow2);
 
-  // ── Initial rotation: centre midpoint Portugal–Peru ──
-  // Portugal lon = -9.1° → coordToPos usa theta = (180 - lon) → theta = 189.1°
-  // Para centrar Portugal na câmara (câmara em Z+), precisamos de rotation.y = -(180 - 9.1) * PI/180
   globeGroup.rotation.y = THREE.MathUtils.degToRad(-(180 - 9.1));
   globeGroup.rotation.x = THREE.MathUtils.degToRad(20);
 
-  // ── Periodic 360° rotation every 5 min ──
   let isRotating    = false;
   let rotStart      = 0;
   let rotStartAngle = 0;
@@ -863,26 +945,21 @@ updateTime(); setInterval(updateTime, 1000);
     rotStartAngle = globeGroup.rotation.y;
   }, 5 * 60 * 1000);
 
-  // ── Animate ──
   let t = 0;
   function animate() {
     requestAnimationFrame(animate);
     t += 0.008;
 
-    // Arc dot
     const arcT  = (t * 0.25) % 1;
     const arcPt = arc.pts[Math.floor(arcT * (arc.pts.length - 1))];
     if (arcPt) travDot.position.copy(arcPt);
 
-    // Pulse rings
     const p = 0.88 + 0.18 * Math.sin(t * 3);
     ptRing.scale.set(p, p, 1);
     peruRing.scale.set(p, p, 1);
 
-    // Slow continuous rotation
     if (!isRotating) globeGroup.rotation.y -= 0.0015;
 
-    // 360° rotation
     if (isRotating) {
       const elapsed  = Date.now() - rotStart;
       const progress = Math.min(elapsed / ROT_DUR, 1);
@@ -895,16 +972,17 @@ updateTime(); setInterval(updateTime, 1000);
   }
   animate();
 
-  window.addEventListener('resize', () => {
+  // Resize com ResizeObserver — mais robusto do que window.resize
+  // (dispara também quando o layout do grid muda, não só quando a janela muda)
+  const ro = new ResizeObserver(() => {
     const W2 = container.offsetWidth, H2 = container.offsetHeight;
+    if (W2 === 0 || H2 === 0) return;
     camera.aspect = W2 / H2;
     camera.updateProjectionMatrix();
     renderer.setSize(W2, H2);
   });
+  ro.observe(container);
 })();
-
-
-
 </script>
 </body>
 </html>
