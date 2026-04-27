@@ -7,6 +7,15 @@ const SHEET_CONFIG_DEFAULT = {
   targetColumn: 'Y',
 };
 
+// Cache system to avoid multiple fetches
+let sheetCache = {};
+let sheetCachePromise = null;
+
+function getCacheKey(config) {
+  const cfg = Object.assign({}, SHEET_CONFIG_DEFAULT, config);
+  return `${cfg.id}|${cfg.tab}`;
+}
+
 function getSheetEndpoint(config) {
   const sheetId = encodeURIComponent(config.id);
   const sheetTab = encodeURIComponent(config.tab);
@@ -140,27 +149,55 @@ function parseSheetDate(value) {
   return String(value);
 }
 
+async function loadSheetDataCached(config = {}) {
+  const cfg = Object.assign({}, SHEET_CONFIG_DEFAULT, config);
+  const cacheKey = getCacheKey(cfg);
+
+  // Return cached data if available
+  if (sheetCache[cacheKey]) {
+    return sheetCache[cacheKey];
+  }
+
+  // If a fetch is already in progress, wait for it
+  if (sheetCachePromise) {
+    const result = await sheetCachePromise;
+    if (sheetCache[cacheKey]) {
+      return sheetCache[cacheKey];
+    }
+  }
+
+  // Fetch and cache
+  sheetCachePromise = (async () => {
+    const endpoint = getSheetEndpoint(cfg);
+    const response = await fetch(endpoint, { cache: 'no-cache' });
+    if (!response.ok) {
+      throw new Error(`Sheet fetch failed: ${response.status} ${response.statusText}`);
+    }
+    const text = await response.text();
+    const json = parseGvizResponse(text);
+    if (!json || !json.table) {
+      throw new Error('Sheet response did not contain table data');
+    }
+
+    const row = findRowByKey(json.table, cfg.keyHeader, cfg.keyValue);
+    if (!row) {
+      throw new Error('No data row found in sheet');
+    }
+
+    sheetCache[cacheKey] = { table: json.table, row: row };
+    return sheetCache[cacheKey];
+  })();
+
+  return await sheetCachePromise;
+}
+
 async function loadSheetValue(config = {}) {
   const cfg = Object.assign({}, SHEET_CONFIG_DEFAULT, config);
-  const endpoint = getSheetEndpoint(cfg);
-  const response = await fetch(endpoint, { cache: 'no-cache' });
-  if (!response.ok) {
-    throw new Error(`Sheet fetch failed: ${response.status} ${response.statusText}`);
-  }
-  const text = await response.text();
-  const json = parseGvizResponse(text);
-  if (!json || !json.table) {
-    throw new Error('Sheet response did not contain table data');
-  }
+  const cached = await loadSheetDataCached(cfg);
 
-  const row = findRowByKey(json.table, cfg.keyHeader, cfg.keyValue);
-  if (!row) {
-    throw new Error('No data row found in sheet');
-  }
-
-  const targetIndex = findSheetCell(json.table, cfg.targetHeader, cfg.targetColumn);
+  const targetIndex = findSheetCell(cached.table, cfg.targetHeader, cfg.targetColumn);
   if (targetIndex < 0) {
     throw new Error(`Header ${cfg.targetHeader} not found and fallback column ${cfg.targetColumn} is invalid`);
   }
-  return getValueFromRow(row, targetIndex);
+  return getValueFromRow(cached.row, targetIndex);
 }
