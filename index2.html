@@ -138,7 +138,7 @@
         
         <div class="data-card p-4 rounded-2xl text-center border-l-4 border-brand-cyan">
             <p class="text-blue-200/50 text-[10px] font-black uppercase tracking-[0.3em]">Progresso Global</p>
-            <h2 class="text-2xl font-black text-brand-cyan">46%</h2>
+            <h2 id="evolucaoValue" class="text-2xl font-black text-brand-cyan">46%</h2>
         </div>
 
         <div class="data-card p-4 rounded-2xl text-center">
@@ -501,6 +501,20 @@
                 camera.updateProjectionMatrix();
             });
         });
+    </script>
+    <script src="./sheet-utils.js"></script>
+    <script>
+        const evolucaoEl = document.getElementById('evolucaoValue');
+        if (evolucaoEl) {
+            loadSheetValue().then(rawValue => {
+                const pct = parseSheetPercentage(rawValue);
+                if (Number.isFinite(pct)) {
+                    evolucaoEl.textContent = `${pct}%`;
+                }
+            }).catch(err => {
+                console.warn('Sheet evolution load failed:', err);
+            });
+        }
     </script>
 </body>
 </html>

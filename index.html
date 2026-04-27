@@ -569,7 +569,7 @@ footer {
           <div class="id-cliente">Bimbo del Peru</div>
           <div class="id-pais">
             <span class="id-flag">🇵🇪</span>
-            <span class="id-pais-info">Peru · EN · L. América</span>
+            <span class="id-pais-info">Peru · EN</span>
           </div>
 
           <div class="id-cliente-label" style="margin-top:clamp(10px,2vh,20px);">Modelo / Equipamento</div>
@@ -656,16 +656,93 @@ footer {
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="./sheet-utils.js"></script>
 <script>
 /* ── CORES ── */
 const ec = v => v >= 75 ? '#00ff87' : v >= 40 ? '#00d4ff' : '#ffaa00';
 const bc = v => v === 100 ? '#00ff87' : v > 0 ? '#00d4ff' : null;
 
 /* ── EVOLUÇÃO ── */
-const EV = 46;
+const FALLBACK_EV = 46;
 const evEl = document.getElementById('evNum');
-evEl.style.color = ec(EV);
-evEl.style.textShadow = `0 0 60px ${ec(EV)}40`;
+
+function updateEvolucao(value) {
+  const pct = Number.isFinite(value) ? value : FALLBACK_EV;
+  evEl.textContent = `${pct}%`;
+  evEl.style.color = ec(pct);
+  evEl.style.textShadow = `0 0 60px ${ec(pct)}40`;
+}
+
+updateEvolucao(FALLBACK_EV);
+loadSheetValue().then(rawValue => {
+  const parsed = parseSheetPercentage(rawValue);
+  if (Number.isFinite(parsed)) {
+    updateEvolucao(parsed);
+  }
+}).catch(err => {
+  console.warn('Sheet evolution load failed:', err);
+});
+
+const clientEl = document.querySelector('.id-cliente');
+const CLIENT_FALLBACK = clientEl ? clientEl.textContent.trim() : 'Bimbo del Peru';
+if (clientEl) {
+  loadSheetValue({ targetHeader: 'CLIENTE', targetColumn: 'K' })
+    .then(rawValue => {
+      if (rawValue != null && String(rawValue).trim().length > 0) {
+        clientEl.textContent = String(rawValue).trim();
+      }
+    })
+    .catch(err => {
+      console.warn('Sheet cliente load failed:', err);
+      clientEl.textContent = CLIENT_FALLBACK;
+    });
+}
+
+const modelEl = document.querySelector('.id-modelo');
+const MODEL_FALLBACK = modelEl ? modelEl.textContent.trim() : 'MWS715 SDS EXD DRD';
+if (modelEl) {
+  loadSheetValue({ targetHeader: 'MODELO', targetColumn: 'N' })
+    .then(rawValue => {
+      if (rawValue != null && String(rawValue).trim().length > 0) {
+        modelEl.textContent = String(rawValue).trim();
+      }
+    })
+    .catch(err => {
+      console.warn('Sheet modelo load failed:', err);
+      modelEl.textContent = MODEL_FALLBACK;
+    });
+}
+
+const loteEl = document.querySelector('.id-lote');
+const LOTE_FALLBACK = loteEl ? loteEl.textContent.trim() : 'Lote · 26L_1';
+if (loteEl) {
+  loadSheetValue({ targetHeader: 'Lote', targetColumn: 'AK' })
+    .then(rawValue => {
+      if (rawValue != null && String(rawValue).trim().length > 0) {
+        loteEl.innerHTML = `Lote &nbsp;·&nbsp; ${String(rawValue).trim()}`;
+      }
+    })
+    .catch(err => {
+      console.warn('Sheet lote load failed:', err);
+      loteEl.innerHTML = LOTE_FALLBACK;
+    });
+}
+
+const paisInfoEl = document.querySelector('.id-pais-info');
+const PAIS_INFO_FALLBACK = paisInfoEl ? paisInfoEl.textContent.trim() : 'Peru · EN';
+if (paisInfoEl) {
+  Promise.all([
+    loadSheetValue({ targetHeader: 'PAÍS', targetColumn: 'L' }).catch(() => 'Peru'),
+    loadSheetValue({ targetHeader: 'IDIOMA', targetColumn: 'M' }).catch(() => 'EN')
+  ]).then(([pais, idioma]) => {
+    const paisStr = String(pais || 'Peru').trim();
+    const idiomaStr = String(idioma || 'EN').trim();
+    paisInfoEl.textContent = `${paisStr} · ${idiomaStr}`;
+  }).catch(err => {
+    console.warn('Sheet pais/idioma load failed:', err);
+    paisInfoEl.textContent = PAIS_INFO_FALLBACK;
+  });
+}
 
 /* ── ZONAS ── */
 const ZONAS = [
