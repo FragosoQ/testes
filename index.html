@@ -914,8 +914,7 @@ let diasUsados = 6, diasTotal = 8, folga = 2;
 Promise.all([
   loadSheetValue({ targetHeader: 'DATA INICIO PRODUÇÃO', targetColumn: 'E' }).catch(() => null),
   loadSheetValue({ targetHeader: 'DATA PRETENDIDA', targetColumn: 'G' }).catch(() => null)
-]).then(([dataInicioBruta, dataPrevist
-aBruta]) => {
+]).then(([dataInicioBruta, dataPrevistiaBruta]) => {
   if (dataInicioBruta && dataPrevistiaBruta) {
     dataInicio = dataInicioBruta;
     dataPrevista = dataPrevistiaBruta;
