@@ -264,7 +264,7 @@
                                 <text x="20" y="21" class="percentage-text text-white/40 text-[6px]" transform="rotate(90 20 20)">0%</text>
                             </svg>
                         </div>
-                        <span class="text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Envolv.</span>
+                        <span class="text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Envolventes</span>
                     </div>
 
                     <div class="flex flex-col items-center gap-2 opacity-20">
@@ -561,6 +561,77 @@
                     operadorEl2.textContent = OPERADOR_FALLBACK_2;
                 });
         }
+
+        // Dynamic zones for index2.html
+        const ZONA_CONFIGS_2 = [
+            { nome: 'Cuba', header: 'CUBA', column: 'AA', selector: '.grid.grid-cols-3 > div:nth-child(1)' },
+            { nome: 'Estrutura', header: 'ESTRUTURA', column: 'AB', selector: '.grid.grid-cols-3 > div:nth-child(2)' },
+            { nome: 'Interior', header: 'INTERIOR', column: 'AC', selector: '.grid.grid-cols-3 > div:nth-child(3)' },
+            { nome: 'Envolventes', header: 'ENVOLVENTES', column: 'AD', selector: '.grid.grid-cols-3 > div:nth-child(4)' },
+            { nome: 'Área Técnica', header: 'ÁREA TÉCNICA', column: 'AE', selector: '.grid.grid-cols-3 > div:nth-child(5)' },
+            { nome: 'Testes', header: 'TESTES', column: 'AF', selector: '.grid.grid-cols-3 > div:nth-child(6)' },
+        ];
+
+        ZONA_CONFIGS_2.forEach(config => {
+            loadSheetValue({ targetHeader: config.header, targetColumn: config.column })
+                .then(rawValue => {
+                    const pct = parseSheetPercentage(rawValue) || 0;
+                    const zoneEl = document.querySelector(config.selector);
+                    if (zoneEl) {
+                        // Update percentage text
+                        const textEl = zoneEl.querySelector('.percentage-text');
+                        if (textEl) {
+                            textEl.textContent = `${pct}%`;
+                        }
+
+                        // Update circle stroke
+                        const circleEl = zoneEl.querySelector('circle:not(.bg)');
+                        if (circleEl) {
+                            const circumference = 106.8; // 2 * π * 17
+                            const offset = circumference - (circumference * pct / 100);
+                            circleEl.style.strokeDashoffset = offset;
+
+                            // Update color based on percentage
+                            if (pct === 100) {
+                                circleEl.className = 'stroke-full-cyan';
+                                if (textEl) textEl.className = 'percentage-text text-full-cyan text-[6px]';
+                            } else if (pct > 0) {
+                                circleEl.className = 'stroke-amber-500';
+                                if (textEl) textEl.className = 'percentage-text text-amber-500 text-[6px]';
+                            } else {
+                                circleEl.className = 'stroke-white/20';
+                                if (textEl) textEl.className = 'percentage-text text-white/40 text-[6px]';
+                            }
+                        }
+
+                        // Update opacity based on percentage
+                        if (pct === 0) {
+                            zoneEl.classList.add('opacity-20');
+                            const labelEl = zoneEl.querySelector('span.text-slate-500');
+                            if (labelEl) {
+                                labelEl.className = 'text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]';
+                            }
+                        } else {
+                            zoneEl.classList.remove('opacity-20');
+                            const labelEl = zoneEl.querySelector('span');
+                            if (labelEl) {
+                                labelEl.className = 'text-[10px] font-black uppercase text-white tracking-[0.2em]';
+                            }
+                        }
+
+                        // Update zone name to match sheet
+                        if (config.nome === 'Envolventes') {
+                            const labelEl = zoneEl.querySelector('span:last-child');
+                            if (labelEl && labelEl.textContent.includes('Envolv.')) {
+                                labelEl.textContent = 'Envolventes';
+                            }
+                        }
+                    }
+                })
+                .catch(err => {
+                    console.warn(`Sheet ${config.header} load failed:`, err);
+                });
+        });
     </script>
 </body>
 </html>

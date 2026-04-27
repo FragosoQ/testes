@@ -838,28 +838,72 @@ if (ordProdEl) {
 }
 
 /* ── ZONAS ── */
-const ZONAS = [
-  { nome: 'Cuba',        pct: 100 },
-  { nome: 'Estrutura',   pct: 65  },
-  { nome: 'Interior',    pct: 100 },
-  { nome: 'Envolvente',  pct: 0   },
-  { nome: 'Área Técnica', pct: 0   },
-  { nome: 'Testes',      pct: 0   },
+const ZONA_CONFIGS = [
+  { nome: 'Cuba', header: 'CUBA', column: 'AA' },
+  { nome: 'Estrutura', header: 'ESTRUTURA', column: 'AB' },
+  { nome: 'Interior', header: 'INTERIOR', column: 'AC' },
+  { nome: 'Envolventes', header: 'ENVOLVENTES', column: 'AD' },
+  { nome: 'Área Técnica', header: 'ÁREA TÉCNICA', column: 'AE' },
+  { nome: 'Testes', header: 'TESTES', column: 'AF' },
 ];
 
 const zg = document.getElementById('zonasGrid');
-ZONAS.forEach(z => {
-  const cls  = z.pct === 100 ? 'done' : z.pct > 0 ? 'going' : 'empty';
-  const col  = bc(z.pct);
-  const card = document.createElement('div');
-  card.className = `zona-card ${cls}`;
-  card.innerHTML = `
-    <div class="zona-card-label">${z.nome}</div>
-    <div class="zona-card-pct" style="color:${col || 'rgba(255,255,255,0.15)'}">${z.pct}%</div>
-    <div class="zona-card-bar">
-      <div class="zona-card-fill" style="width:${z.pct}%;background:${col || 'rgba(255,255,255,0.07)'}"></div>
-    </div>`;
-  zg.appendChild(card);
+
+// Load all zone values in parallel
+Promise.all(ZONA_CONFIGS.map(config => 
+  loadSheetValue({ targetHeader: config.header, targetColumn: config.column })
+    .then(rawValue => {
+      const pct = parseSheetPercentage(rawValue) || 0;
+      return { nome: config.nome, pct: pct };
+    })
+    .catch(err => {
+      console.warn(`Sheet ${config.header} load failed:`, err);
+      return { nome: config.nome, pct: 0 }; // fallback to 0%
+    })
+)).then(zonas => {
+  // Clear existing zones
+  zg.innerHTML = '';
+  
+  // Render zones
+  zonas.forEach(z => {
+    const cls  = z.pct === 100 ? 'done' : z.pct > 0 ? 'going' : 'empty';
+    const col  = bc(z.pct);
+    const card = document.createElement('div');
+    card.className = `zona-card ${cls}`;
+    card.innerHTML = `
+      <div class="zona-card-label">${z.nome}</div>
+      <div class="zona-card-pct" style="color:${col || 'rgba(255,255,255,0.15)'}">${z.pct}%</div>
+      <div class="zona-card-bar">
+        <div class="zona-card-fill" style="width:${z.pct}%;background:${col || 'rgba(255,255,255,0.07)'}"></div>
+      </div>`;
+    zg.appendChild(card);
+  });
+}).catch(err => {
+  console.warn('Failed to load zones:', err);
+  // Fallback to static zones
+  const fallbackZonas = [
+    { nome: 'Cuba', pct: 100 },
+    { nome: 'Estrutura', pct: 65 },
+    { nome: 'Interior', pct: 100 },
+    { nome: 'Envolventes', pct: 0 },
+    { nome: 'Área Técnica', pct: 0 },
+    { nome: 'Testes', pct: 0 },
+  ];
+  
+  zg.innerHTML = '';
+  fallbackZonas.forEach(z => {
+    const cls  = z.pct === 100 ? 'done' : z.pct > 0 ? 'going' : 'empty';
+    const col  = bc(z.pct);
+    const card = document.createElement('div');
+    card.className = `zona-card ${cls}`;
+    card.innerHTML = `
+      <div class="zona-card-label">${z.nome}</div>
+      <div class="zona-card-pct" style="color:${col || 'rgba(255,255,255,0.15)'}">${z.pct}%</div>
+      <div class="zona-card-bar">
+        <div class="zona-card-fill" style="width:${z.pct}%;background:${col || 'rgba(255,255,255,0.07)'}"></div>
+      </div>`;
+    zg.appendChild(card);
+  });
 });
 
 /* ── PRAZO ── */
