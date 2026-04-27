@@ -562,6 +562,39 @@
                 });
         }
 
+        // Dynamic dates for footer
+        const dataInicioEl2 = document.querySelector('span.text-blue-300.uppercase.leading-none');
+        const dataEntregaEl2 = document.querySelector('span.text-emerald-400.tracking-wider.leading-none');
+        
+        if (dataInicioEl2 || dataEntregaEl2) {
+            Promise.all([
+                loadSheetValue({ targetHeader: 'DATA INICIO PRODUÇÃO', targetColumn: 'E' }).catch(() => null),
+                loadSheetValue({ targetHeader: 'DATA PRETENDIDA', targetColumn: 'G' }).catch(() => null)
+            ]).then(([dataInicioBruta, dataPrevistiaBruta]) => {
+                if (dataInicioBruta && dataInicioEl2) {
+                    const dataInicio = formatSheetDate(dataInicioBruta);
+                    if (dataInicio) {
+                        const [dia, mes, ano] = dataInicio.split('/');
+                        const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+                        const mesAbrev = meses[parseInt(mes) - 1];
+                        dataInicioEl2.textContent = `${dia} ${mesAbrev} ${ano}`;
+                    }
+                }
+                
+                if (dataPrevistiaBruta && dataEntregaEl2) {
+                    const dataPrevista = formatSheetDate(dataPrevistiaBruta);
+                    if (dataPrevista) {
+                        const [dia, mes, ano] = dataPrevista.split('/');
+                        const meses = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
+                        const mesAbrev = meses[parseInt(mes) - 1];
+                        dataEntregaEl2.textContent = `${dia} ${mesAbrev} ${ano}`;
+                    }
+                }
+            }).catch(err => {
+                console.warn('Failed to load dates:', err);
+            });
+        }
+
         // Dynamic zones for index2.html
         const ZONA_CONFIGS_2 = [
             { nome: 'Cuba', header: 'CUBA', column: 'AA', selector: '.grid.grid-cols-3 > div:nth-child(1)' },

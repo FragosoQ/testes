@@ -137,16 +137,39 @@ function parseSheetDate(value) {
     const month = parseInt(dateMatch[2]); // 0-based in JS Date
     const day = parseInt(dateMatch[3]);
     const date = new Date(year, month, day);
-    return date.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    return date;
   }
 
   // Try to parse as regular date string
   const date = new Date(String(value));
   if (!isNaN(date.getTime())) {
-    return date.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    return date;
   }
 
-  return String(value);
+  return null;
+}
+
+function formatSheetDate(value) {
+  const date = parseSheetDate(value);
+  if (!date) {
+    return String(value);
+  }
+  return date.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+function getDaysDiff(dateValue1, dateValue2) {
+  const date1 = parseSheetDate(dateValue1);
+  const date2 = parseSheetDate(dateValue2);
+  
+  if (!date1 || !date2) {
+    return null;
+  }
+
+  // Reset time to midnight for accurate day difference
+  date1.setHours(0, 0, 0, 0);
+  date2.setHours(0, 0, 0, 0);
+
+  return Math.floor((date2 - date1) / (1000 * 60 * 60 * 24));
 }
 
 async function loadSheetDataCached(config = {}) {

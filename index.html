@@ -780,7 +780,7 @@ const DATA_INICIO_FALLBACK = dataInicioEl ? dataInicioEl.textContent.trim() : '1
 if (dataInicioEl) {
   loadSheetValue({ targetHeader: 'DATA INICIO PRODUÇÃO', targetColumn: 'E' })
     .then(rawValue => {
-      const formatted = parseSheetDate(rawValue);
+      const formatted = formatSheetDate(rawValue);
       if (formatted) {
         dataInicioEl.textContent = formatted;
       }
@@ -796,7 +796,7 @@ const DATA_PREVISTA_FALLBACK = dataPrevistaEl ? dataPrevistaEl.textContent.trim(
 if (dataPrevistaEl) {
   loadSheetValue({ targetHeader: 'DATA PRETENDIDA', targetColumn: 'G' })
     .then(rawValue => {
-      const formatted = parseSheetDate(rawValue);
+      const formatted = formatSheetDate(rawValue);
       if (formatted) {
         dataPrevistaEl.textContent = formatted;
       }
@@ -907,16 +907,74 @@ Promise.all(ZONA_CONFIGS.map(config =>
 });
 
 /* ── PRAZO ── */
-const diasUsados = 6, diasTotal = 8, folga = 2;
-const ratio = diasUsados / diasTotal;
-const pc = ratio >= .9 ? '#ff3b3b' : ratio >= .7 ? '#ffaa00' : '#00ff87';
-document.getElementById('prazoUsed').style.color = pc;
-document.getElementById('prazoUsed').style.textShadow = `0 0 40px ${pc}50`;
-document.getElementById('prazoBar').style.width      = (ratio * 100) + '%';
-document.getElementById('prazoBar').style.background = pc;
-const fs = document.getElementById('folgaSpan');
-fs.textContent = `${folga} dias de folga`;
-fs.style.color = folga <= 1 ? '#ff3b3b' : folga <= 3 ? '#ffaa00' : '#00ff87';
+let dataInicio = null, dataPrevista = null;
+let diasUsados = 6, diasTotal = 8, folga = 2;
+
+// Carregar datas para calcular prazos
+Promise.all([
+  loadSheetValue({ targetHeader: 'DATA INICIO PRODUÇÃO', targetColumn: 'E' }).catch(() => null),
+  loadSheetValue({ targetHeader: 'DATA PRETENDIDA', targetColumn: 'G' }).catch(() => null)
+]).then(([dataInicioBruta, dataPrevist
+aBruta]) => {
+  if (dataInicioBruta && dataPrevistiaBruta) {
+    dataInicio = dataInicioBruta;
+    dataPrevista = dataPrevistiaBruta;
+
+    // Calcular dias
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+
+    diasTotal = getDaysDiff(dataInicio, dataPrevista) || 8;
+    diasUsados = getDaysDiff(dataInicio, hoje) || 6;
+    folga = getDaysDiff(hoje, dataPrevista) || 2;
+
+    // Garantir valores não-negativos
+    diasUsados = Math.max(0, diasUsados);
+    folga = Math.max(0, folga);
+    diasTotal = Math.max(diasUsados, diasTotal);
+  }
+
+  // Atualizar UI
+  const ratio = diasUsados / diasTotal;
+  const pc = ratio >= .9 ? '#ff3b3b' : ratio >= .7 ? '#ffaa00' : '#00ff87';
+  
+  const prazoUsedEl = document.getElementById('prazoUsed');
+  const prazoBarEl = document.getElementById('prazoBar');
+  const folgaEl = document.getElementById('folgaSpan');
+  const prazoTotalEl = document.querySelector('.prazo-total');
+
+  if (prazoUsedEl) {
+    prazoUsedEl.textContent = diasUsados;
+    prazoUsedEl.style.color = pc;
+    prazoUsedEl.style.textShadow = `0 0 40px ${pc}50`;
+  }
+
+  if (prazoBarEl) {
+    prazoBarEl.style.width = (ratio * 100) + '%';
+    prazoBarEl.style.background = pc;
+  }
+
+  if (folgaEl) {
+    folgaEl.textContent = `${folga} dias de folga`;
+    folgaEl.style.color = folga <= 1 ? '#ff3b3b' : folga <= 3 ? '#ffaa00' : '#00ff87';
+  }
+
+  if (prazoTotalEl) {
+    prazoTotalEl.textContent = diasTotal;
+  }
+}).catch(err => {
+  console.warn('Failed to calculate prazo:', err);
+  // Use static fallback
+  const ratio = diasUsados / diasTotal;
+  const pc = ratio >= .9 ? '#ff3b3b' : ratio >= .7 ? '#ffaa00' : '#00ff87';
+  document.getElementById('prazoUsed').style.color = pc;
+  document.getElementById('prazoUsed').style.textShadow = `0 0 40px ${pc}50`;
+  document.getElementById('prazoBar').style.width = (ratio * 100) + '%';
+  document.getElementById('prazoBar').style.background = pc;
+  const fs = document.getElementById('folgaSpan');
+  fs.textContent = `${folga} dias de folga`;
+  fs.style.color = folga <= 1 ? '#ff3b3b' : folga <= 3 ? '#ffaa00' : '#00ff87';
+});
 
 /* ── DATE / TIME ── */
 function updateTime() {
