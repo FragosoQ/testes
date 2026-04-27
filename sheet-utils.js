@@ -116,6 +116,30 @@ function parseSheetPercentage(value) {
   return Math.round(pct);
 }
 
+function parseSheetDate(value) {
+  if (value == null) {
+    return null;
+  }
+
+  // Handle Google Sheets date format like "Date(2026,3,14)"
+  const dateMatch = String(value).match(/Date\((\d+),(\d+),(\d+)\)/);
+  if (dateMatch) {
+    const year = parseInt(dateMatch[1]);
+    const month = parseInt(dateMatch[2]); // 0-based in JS Date
+    const day = parseInt(dateMatch[3]);
+    const date = new Date(year, month, day);
+    return date.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
+
+  // Try to parse as regular date string
+  const date = new Date(String(value));
+  if (!isNaN(date.getTime())) {
+    return date.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
+
+  return String(value);
+}
+
 async function loadSheetValue(config = {}) {
   const cfg = Object.assign({}, SHEET_CONFIG_DEFAULT, config);
   const endpoint = getSheetEndpoint(cfg);

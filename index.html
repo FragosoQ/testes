@@ -744,6 +744,99 @@ if (paisInfoEl) {
   });
 }
 
+// Additional dynamic fields
+const operadorEl = document.querySelector('.f-op');
+const OPERADOR_FALLBACK = operadorEl ? operadorEl.textContent.trim() : 'Richard · Diogo';
+if (operadorEl) {
+  loadSheetValue({ targetHeader: 'OPERADOR', targetColumn: 'AH' })
+    .then(rawValue => {
+      if (rawValue != null && String(rawValue).trim().length > 0) {
+        operadorEl.textContent = String(rawValue).trim();
+      }
+    })
+    .catch(err => {
+      console.warn('Sheet operador load failed:', err);
+      operadorEl.textContent = OPERADOR_FALLBACK;
+    });
+}
+
+const nserieEl = document.querySelector('.f-nserie');
+const NSERIE_FALLBACK = nserieEl ? nserieEl.textContent.trim() : 'SWCG02003025';
+if (nserieEl) {
+  loadSheetValue({ targetHeader: 'N. SÉRIE', targetColumn: 'X' })
+    .then(rawValue => {
+      if (rawValue != null && String(rawValue).trim().length > 0) {
+        nserieEl.textContent = String(rawValue).trim();
+      }
+    })
+    .catch(err => {
+      console.warn('Sheet nserie load failed:', err);
+      nserieEl.textContent = NSERIE_FALLBACK;
+    });
+}
+
+const dataInicioEl = document.querySelectorAll('.d-v')[0]; // First .d-v element
+const DATA_INICIO_FALLBACK = dataInicioEl ? dataInicioEl.textContent.trim() : '14 / 04 / 2026';
+if (dataInicioEl) {
+  loadSheetValue({ targetHeader: 'DATA INICIO PRODUÇÃO', targetColumn: 'E' })
+    .then(rawValue => {
+      const formatted = parseSheetDate(rawValue);
+      if (formatted) {
+        dataInicioEl.textContent = formatted;
+      }
+    })
+    .catch(err => {
+      console.warn('Sheet data inicio load failed:', err);
+      dataInicioEl.textContent = DATA_INICIO_FALLBACK;
+    });
+}
+
+const dataPrevistaEl = document.querySelectorAll('.d-v')[1]; // Second .d-v element
+const DATA_PREVISTA_FALLBACK = dataPrevistaEl ? dataPrevistaEl.textContent.trim() : '22 / 04 / 2026';
+if (dataPrevistaEl) {
+  loadSheetValue({ targetHeader: 'DATA PRETENDIDA', targetColumn: 'G' })
+    .then(rawValue => {
+      const formatted = parseSheetDate(rawValue);
+      if (formatted) {
+        dataPrevistaEl.textContent = formatted;
+      }
+    })
+    .catch(err => {
+      console.warn('Sheet data prevista load failed:', err);
+      dataPrevistaEl.textContent = DATA_PREVISTA_FALLBACK;
+    });
+}
+
+const encCliEl = document.querySelectorAll('.d-v')[2]; // Third .d-v element
+const ENC_CLI_FALLBACK = encCliEl ? encCliEl.textContent.trim() : '34_2026';
+if (encCliEl) {
+  loadSheetValue({ targetHeader: 'ENC. CLI.', targetColumn: 'J' })
+    .then(rawValue => {
+      if (rawValue != null && String(rawValue).trim().length > 0) {
+        encCliEl.textContent = String(rawValue).trim();
+      }
+    })
+    .catch(err => {
+      console.warn('Sheet enc cli load failed:', err);
+      encCliEl.textContent = ENC_CLI_FALLBACK;
+    });
+}
+
+const ordProdEl = document.querySelector('.h-op');
+const ORD_PROD_FALLBACK = ordProdEl ? ordProdEl.textContent.trim() : 'OP_149_2026';
+if (ordProdEl) {
+  loadSheetValue({ targetHeader: 'ORD. PROD.', targetColumn: 'I' })
+    .then(rawValue => {
+      if (rawValue != null && String(rawValue).trim().length > 0) {
+        ordProdEl.textContent = String(rawValue).trim();
+      }
+    })
+    .catch(err => {
+      console.warn('Sheet ord prod load failed:', err);
+      ordProdEl.textContent = ORD_PROD_FALLBACK;
+    });
+}
+
 /* ── ZONAS ── */
 const ZONAS = [
   { nome: 'Cuba',        pct: 100 },

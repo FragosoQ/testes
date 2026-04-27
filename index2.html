@@ -515,6 +515,52 @@
                 console.warn('Sheet evolution load failed:', err);
             });
         }
+
+        // Additional dynamic fields for index2.html
+        const ordProdEl2 = document.querySelector('h2.text-xl.font-black.text-white');
+        const ORD_PROD_FALLBACK_2 = ordProdEl2 ? ordProdEl2.textContent.trim() : 'OP_149_2026';
+        if (ordProdEl2) {
+            loadSheetValue({ targetHeader: 'ORD. PROD.', targetColumn: 'I' })
+                .then(rawValue => {
+                    if (rawValue != null && String(rawValue).trim().length > 0) {
+                        ordProdEl2.textContent = String(rawValue).trim();
+                    }
+                })
+                .catch(err => {
+                    console.warn('Sheet ord prod load failed:', err);
+                    ordProdEl2.textContent = ORD_PROD_FALLBACK_2;
+                });
+        }
+
+        const nserieEls = document.querySelectorAll('p.text-lg.font-mono.text-emerald-400.font-black, p.text-\\[11px\\].font-bold.text-emerald-400.truncate');
+        const NSERIE_FALLBACK_2 = 'SWCG02003025';
+        nserieEls.forEach(el => {
+            loadSheetValue({ targetHeader: 'N. SÉRIE', targetColumn: 'X' })
+                .then(rawValue => {
+                    if (rawValue != null && String(rawValue).trim().length > 0) {
+                        el.textContent = String(rawValue).trim();
+                    }
+                })
+                .catch(err => {
+                    console.warn('Sheet nserie load failed:', err);
+                    el.textContent = NSERIE_FALLBACK_2;
+                });
+        });
+
+        const operadorEl2 = document.querySelector('span.text-\\[11px\\].font-black.text-white.uppercase.tracking-wider.leading-none');
+        const OPERADOR_FALLBACK_2 = operadorEl2 ? operadorEl2.textContent.trim() : 'Richard, Diogo';
+        if (operadorEl2) {
+            loadSheetValue({ targetHeader: 'OPERADOR', targetColumn: 'AH' })
+                .then(rawValue => {
+                    if (rawValue != null && String(rawValue).trim().length > 0) {
+                        operadorEl2.textContent = String(rawValue).trim();
+                    }
+                })
+                .catch(err => {
+                    console.warn('Sheet operador load failed:', err);
+                    operadorEl2.textContent = OPERADOR_FALLBACK_2;
+                });
+        }
     </script>
 </body>
 </html>
