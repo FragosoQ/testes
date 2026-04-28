@@ -1188,9 +1188,10 @@ updateTime(); setInterval(updateTime, 1000);
     return ring;
   }
 
-  // Marcadores iniciais (Portugal como padrão)
+  // Marcadores iniciais (Portugal como origem)
   let ptRing = addMarker(38.7, -9.1, 0xffffff);
-  let destRing = addMarker(-9.2, -75.0, 0x00ff87); // Peru como padrão inicial
+  let destRing = null;
+  let arc = null;
 
   // ── ARC ──
   function makeArc(latA, lonA, latB, lonB) {
@@ -1203,9 +1204,6 @@ updateTime(); setInterval(updateTime, 1000);
     const mat   = new THREE.LineBasicMaterial({ color: 0x00aaff, transparent: true, opacity: 0.7 });
     return { line: new THREE.Line(geo, mat), pts };
   }
-
-  let arc = makeArc(38.7, -9.1, -9.2, -75.0); // Arco inicial Portugal -> Peru
-  globeGroup.add(arc.line);
 
   // ── TRAVEL DOT ──
   const travDot = new THREE.Mesh(
@@ -1229,14 +1227,20 @@ updateTime(); setInterval(updateTime, 1000);
   // Função para atualizar marcadores e arco baseado no país de destino
   function updateGlobeDestination(countryName) {
     const destCoords = getCountryCoordinates(countryName);
-    
-    // Remover marcadores e arco antigos
-    globeGroup.remove(destRing);
-    globeGroup.remove(arc.line);
-    
+
+    // Remover marcador e arco antigos, se existirem
+    if (destRing) {
+      globeGroup.remove(destRing);
+      destRing = null;
+    }
+    if (arc && arc.line) {
+      globeGroup.remove(arc.line);
+      arc = null;
+    }
+
     // Criar novo marcador de destino
     destRing = addMarker(destCoords.lat, destCoords.lon, 0x00ff87);
-    
+
     // Criar novo arco
     arc = makeArc(38.7, -9.1, destCoords.lat, destCoords.lon);
     globeGroup.add(arc.line);
@@ -1252,7 +1256,7 @@ updateTime(); setInterval(updateTime, 1000);
     })
     .catch(err => {
       console.warn('Sheet país load failed for globe:', err);
-      // Mantém configuração padrão (Portugal -> Peru)
+      // Sem destino dinâmico se o país não for carregado
     });
 
   globeGroup.rotation.y = THREE.MathUtils.degToRad(-(180 - 9.1));
@@ -1275,13 +1279,17 @@ updateTime(); setInterval(updateTime, 1000);
     requestAnimationFrame(animate);
     t += 0.008;
 
-    const arcT  = (t * 0.25) % 1;
-    const arcPt = arc.pts[Math.floor(arcT * (arc.pts.length - 1))];
-    if (arcPt) travDot.position.copy(arcPt);
+    if (arc && arc.pts && arc.pts.length > 0) {
+      const arcT  = (t * 0.25) % 1;
+      const arcPt = arc.pts[Math.floor(arcT * (arc.pts.length - 1))];
+      if (arcPt) travDot.position.copy(arcPt);
+    }
 
     const p = 0.88 + 0.18 * Math.sin(t * 3);
     ptRing.scale.set(p, p, 1);
-    destRing.scale.set(p, p, 1);
+    if (destRing) {
+      destRing.scale.set(p, p, 1);
+    }
 
     if (!isRotating) globeGroup.rotation.y -= 0.0015;
 
