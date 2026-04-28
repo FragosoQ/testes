@@ -738,6 +738,12 @@ if (paisInfoEl) {
     const paisStr = String(pais || 'Peru').trim();
     const idiomaStr = String(idioma || 'EN').trim();
     paisInfoEl.textContent = `${paisStr} · ${idiomaStr}`;
+
+    // Atualizar bandeira dinamicamente baseada no país
+    const flagEl = document.querySelector('.id-flag');
+    if (flagEl) {
+      flagEl.textContent = getCountryFlag(paisStr);
+    }
   }).catch(err => {
     console.warn('Sheet pais/idioma load failed:', err);
     paisInfoEl.textContent = PAIS_INFO_FALLBACK;

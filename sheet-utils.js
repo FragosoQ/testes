@@ -322,3 +322,95 @@ function getDeadlineInfo(startDate, dueDate, todayDate = new Date()) {
     percentage: totalWorkDays > 0 ? Math.round(((totalWorkDays - remainingWorkDays) / totalWorkDays) * 100) : 0
   };
 }
+
+/**
+ * Retorna o emoji da bandeira baseado no nome do país
+ * @param {String} countryName - Nome do país
+ * @returns {String} Emoji da bandeira ou 🇺🇳 se não encontrado
+ */
+function getCountryFlag(countryName) {
+  if (!countryName || typeof countryName !== 'string') {
+    return '🇺🇳'; // United Nations flag as fallback
+  }
+
+  const country = countryName.trim().toLowerCase();
+
+  // Mapeamento de países para códigos ISO de 2 letras
+  const countryMap = {
+    'portugal': 'PT',
+    'portuguesa': 'PT',
+    'espanha': 'ES',
+    'spain': 'ES',
+    'frança': 'FR',
+    'france': 'FR',
+    'itália': 'IT',
+    'italy': 'IT',
+    'alemanha': 'DE',
+    'germany': 'DE',
+    'reino unido': 'GB',
+    'united kingdom': 'GB',
+    'uk': 'GB',
+    'estados unidos': 'US',
+    'united states': 'US',
+    'usa': 'US',
+    'brasil': 'BR',
+    'brazil': 'BR',
+    'méxico': 'MX',
+    'mexico': 'MX',
+    'peru': 'PE',
+    'perú': 'PE',
+    'chile': 'CL',
+    'colômbia': 'CO',
+    'colombia': 'CO',
+    'argentina': 'AR',
+    'equador': 'EC',
+    'ecuador': 'EC',
+    'uruguai': 'UY',
+    'uruguay': 'UY',
+    'paraguai': 'PY',
+    'paraguay': 'PY',
+    'venezuela': 'VE',
+    'bolívia': 'BO',
+    'bolivia': 'BO',
+    'panamá': 'PA',
+    'panama': 'PA',
+    'costa rica': 'CR',
+    'costa-rica': 'CR',
+    'nicarágua': 'NI',
+    'nicaragua': 'NI',
+    'honduras': 'HN',
+    'el salvador': 'SV',
+    'elsalvador': 'SV',
+    'guatemala': 'GT',
+    'belize': 'BZ',
+    'andorra': 'AD',
+    'angola': 'AO',
+    'moçambique': 'MZ',
+    'mozambique': 'MZ',
+    'cabo verde': 'CV',
+    'caboverde': 'CV',
+    'guiné-bissau': 'GW',
+    'guine-bissau': 'GW',
+    'são tomé e príncipe': 'ST',
+    'sao tome e principe': 'ST',
+    'timor-leste': 'TL',
+    'timor leste': 'TL',
+    'macau': 'MO',
+    'macao': 'MO'
+  };
+
+  const countryCode = countryMap[country];
+  if (!countryCode) {
+    return '🇺🇳'; // Fallback
+  }
+
+  // Converter código ISO para emoji de bandeira
+  // A = 127462 (🇦), B = 127463 (🇧), etc.
+  const flag = countryCode
+    .toUpperCase()
+    .split('')
+    .map(char => String.fromCodePoint(127462 + char.charCodeAt(0) - 65))
+    .join('');
+
+  return flag;
+}
