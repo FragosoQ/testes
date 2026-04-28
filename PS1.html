@@ -507,6 +507,10 @@ main {
 .prazo-section {
   padding: clamp(14px, 2.2vh, 24px) clamp(18px, 2vw, 28px);
   border-bottom: 1px solid rgba(255,255,255,0.1);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 0;
 }
 
 .prazo-top {
@@ -564,7 +568,16 @@ main {
 /* DETALHES */
 .details-section {
   padding: clamp(12px, 1.8vh, 20px) clamp(18px, 2vw, 28px);
-  display: flex; flex-direction: column; gap: 0;
+  display: flex; flex-direction: column;
+  justify-content: center;
+  align-items: stretch;
+  gap: 0;
+  min-height: 0;
+}
+/* Agrupa os rows e mantém-nos coladinhos, centrados em bloco */
+.details-inner {
+  display: flex; flex-direction: column;
+  width: 100%;
 }
 
 .detail-row {
@@ -858,13 +871,15 @@ footer {
 
       <!-- DETALHES -->
       <div class="details-section">
-        <div class="detail-row">
-          <span class="d-k">Início</span>
-          <span class="d-v">14 / 04 / 2026</span>
-        </div>
-        <div class="detail-row">
-          <span class="d-k">Previsto</span>
-          <span class="d-v">22 / 04 / 2026</span>
+        <div class="details-inner">
+          <div class="detail-row">
+            <span class="d-k">Início</span>
+            <span class="d-v">14 / 04 / 2026</span>
+          </div>
+          <div class="detail-row">
+            <span class="d-k">Previsto</span>
+            <span class="d-v">22 / 04 / 2026</span>
+          </div>
         </div>
       </div>
 
@@ -1590,10 +1605,135 @@ function getCountryCoordinates(countryName) {
     'timor-leste': { lat: -8.6, lon: 125.6 },
     'timor leste': { lat: -8.6, lon: 125.6 },
     'macau': { lat: 22.2, lon: 113.5 },
-    'macao': { lat: 22.2, lon: 113.5 }
+    'macao': { lat: 22.2, lon: 113.5 },
+    // Resto da Europa
+    'suiça': { lat: 46.95, lon: 7.45 },
+    'suíça': { lat: 46.95, lon: 7.45 },
+    'suica': { lat: 46.95, lon: 7.45 },
+    'switzerland': { lat: 46.95, lon: 7.45 },
+    'áustria': { lat: 48.2, lon: 16.4 },
+    'austria': { lat: 48.2, lon: 16.4 },
+    'bélgica': { lat: 50.85, lon: 4.35 },
+    'belgica': { lat: 50.85, lon: 4.35 },
+    'belgium': { lat: 50.85, lon: 4.35 },
+    'holanda': { lat: 52.37, lon: 4.9 },
+    'países baixos': { lat: 52.37, lon: 4.9 },
+    'paises baixos': { lat: 52.37, lon: 4.9 },
+    'netherlands': { lat: 52.37, lon: 4.9 },
+    'luxemburgo': { lat: 49.6, lon: 6.13 },
+    'luxembourg': { lat: 49.6, lon: 6.13 },
+    'irlanda': { lat: 53.35, lon: -6.26 },
+    'ireland': { lat: 53.35, lon: -6.26 },
+    'noruega': { lat: 59.91, lon: 10.75 },
+    'norway': { lat: 59.91, lon: 10.75 },
+    'suécia': { lat: 59.33, lon: 18.07 },
+    'suecia': { lat: 59.33, lon: 18.07 },
+    'sweden': { lat: 59.33, lon: 18.07 },
+    'finlândia': { lat: 60.17, lon: 24.94 },
+    'finlandia': { lat: 60.17, lon: 24.94 },
+    'finland': { lat: 60.17, lon: 24.94 },
+    'dinamarca': { lat: 55.68, lon: 12.57 },
+    'denmark': { lat: 55.68, lon: 12.57 },
+    'islândia': { lat: 64.13, lon: -21.82 },
+    'islandia': { lat: 64.13, lon: -21.82 },
+    'iceland': { lat: 64.13, lon: -21.82 },
+    'polónia': { lat: 52.23, lon: 21.01 },
+    'polonia': { lat: 52.23, lon: 21.01 },
+    'poland': { lat: 52.23, lon: 21.01 },
+    'república checa': { lat: 50.08, lon: 14.44 },
+    'republica checa': { lat: 50.08, lon: 14.44 },
+    'czech republic': { lat: 50.08, lon: 14.44 },
+    'czechia': { lat: 50.08, lon: 14.44 },
+    'eslováquia': { lat: 48.15, lon: 17.11 },
+    'eslovaquia': { lat: 48.15, lon: 17.11 },
+    'slovakia': { lat: 48.15, lon: 17.11 },
+    'hungria': { lat: 47.5, lon: 19.04 },
+    'hungary': { lat: 47.5, lon: 19.04 },
+    'roménia': { lat: 44.43, lon: 26.1 },
+    'romenia': { lat: 44.43, lon: 26.1 },
+    'romania': { lat: 44.43, lon: 26.1 },
+    'bulgária': { lat: 42.7, lon: 23.32 },
+    'bulgaria': { lat: 42.7, lon: 23.32 },
+    'grécia': { lat: 37.98, lon: 23.73 },
+    'grecia': { lat: 37.98, lon: 23.73 },
+    'greece': { lat: 37.98, lon: 23.73 },
+    'ucrânia': { lat: 50.45, lon: 30.52 },
+    'ucrania': { lat: 50.45, lon: 30.52 },
+    'ukraine': { lat: 50.45, lon: 30.52 },
+    'turquia': { lat: 39.93, lon: 32.86 },
+    'turkey': { lat: 39.93, lon: 32.86 },
+    // Médio Oriente
+    'israel': { lat: 31.78, lon: 35.22 },
+    'arábia saudita': { lat: 24.71, lon: 46.68 },
+    'arabia saudita': { lat: 24.71, lon: 46.68 },
+    'saudi arabia': { lat: 24.71, lon: 46.68 },
+    'emirados árabes unidos': { lat: 24.45, lon: 54.38 },
+    'emirados arabes unidos': { lat: 24.45, lon: 54.38 },
+    'uae': { lat: 24.45, lon: 54.38 },
+    'qatar': { lat: 25.28, lon: 51.52 },
+    'catar': { lat: 25.28, lon: 51.52 },
+    'kuwait': { lat: 29.38, lon: 47.99 },
+    'líbano': { lat: 33.89, lon: 35.5 },
+    'libano': { lat: 33.89, lon: 35.5 },
+    'lebanon': { lat: 33.89, lon: 35.5 },
+    'jordânia': { lat: 31.95, lon: 35.93 },
+    'jordania': { lat: 31.95, lon: 35.93 },
+    'jordan': { lat: 31.95, lon: 35.93 },
+    // Ásia
+    'china': { lat: 39.91, lon: 116.4 },
+    'japão': { lat: 35.68, lon: 139.69 },
+    'japao': { lat: 35.68, lon: 139.69 },
+    'japan': { lat: 35.68, lon: 139.69 },
+    'coreia do sul': { lat: 37.57, lon: 126.98 },
+    'south korea': { lat: 37.57, lon: 126.98 },
+    'india': { lat: 28.61, lon: 77.21 },
+    'índia': { lat: 28.61, lon: 77.21 },
+    'indonésia': { lat: -6.21, lon: 106.85 },
+    'indonesia': { lat: -6.21, lon: 106.85 },
+    'tailândia': { lat: 13.75, lon: 100.5 },
+    'tailandia': { lat: 13.75, lon: 100.5 },
+    'thailand': { lat: 13.75, lon: 100.5 },
+    'vietname': { lat: 21.03, lon: 105.85 },
+    'vietnam': { lat: 21.03, lon: 105.85 },
+    'filipinas': { lat: 14.6, lon: 120.98 },
+    'philippines': { lat: 14.6, lon: 120.98 },
+    'malásia': { lat: 3.14, lon: 101.69 },
+    'malasia': { lat: 3.14, lon: 101.69 },
+    'malaysia': { lat: 3.14, lon: 101.69 },
+    'singapura': { lat: 1.35, lon: 103.82 },
+    'singapore': { lat: 1.35, lon: 103.82 },
+    // Norte de África
+    'marrocos': { lat: 34.02, lon: -6.83 },
+    'morocco': { lat: 34.02, lon: -6.83 },
+    'argélia': { lat: 36.75, lon: 3.06 },
+    'argelia': { lat: 36.75, lon: 3.06 },
+    'algeria': { lat: 36.75, lon: 3.06 },
+    'tunísia': { lat: 36.81, lon: 10.18 },
+    'tunisia': { lat: 36.81, lon: 10.18 },
+    'egito': { lat: 30.04, lon: 31.24 },
+    'egipto': { lat: 30.04, lon: 31.24 },
+    'egypt': { lat: 30.04, lon: 31.24 },
+    // África subsaariana
+    'áfrica do sul': { lat: -25.75, lon: 28.19 },
+    'africa do sul': { lat: -25.75, lon: 28.19 },
+    'south africa': { lat: -25.75, lon: 28.19 },
+    'nigéria': { lat: 9.08, lon: 7.4 },
+    'nigeria': { lat: 9.08, lon: 7.4 },
+    'quénia': { lat: -1.29, lon: 36.82 },
+    'quenia': { lat: -1.29, lon: 36.82 },
+    'kenya': { lat: -1.29, lon: 36.82 },
+    // América do Norte
+    'canadá': { lat: 45.42, lon: -75.7 },
+    'canada': { lat: 45.42, lon: -75.7 },
+    // Oceania
+    'austrália': { lat: -35.28, lon: 149.13 },
+    'australia': { lat: -35.28, lon: 149.13 },
+    'nova zelândia': { lat: -41.29, lon: 174.78 },
+    'nova zelandia': { lat: -41.29, lon: 174.78 },
+    'new zealand': { lat: -41.29, lon: 174.78 }
   };
 
-  return coordinatesMap[country] || { lat: 38.7, lon: -9.1 }; // Portugal como fallback
+  return coordinatesMap[country] || null;
 }
 
 </script>
@@ -2064,13 +2204,16 @@ function renderSheetData(sheetRow) {
       setPaisGrid(valid);
     }
 
-    // O globo só aceita um país de cada vez — usa o primeiro (alfabeticamente)
-    if (typeof updateGlobeDestination === 'function') {
-      updateGlobeDestination(valid[0].pais);
+    // Marcar todos os países no globo (Portugal mantém-se sempre como origem)
+    if (typeof updateGlobeDestinations === 'function') {
+      updateGlobeDestinations(valid.map(r => r.pais));
     }
   }).catch(err => {
     console.warn('Falha a carregar países do montagemEditável:', err);
     setPaisEmpty();
+    if (typeof updateGlobeDestinations === 'function') {
+      updateGlobeDestinations([]);
+    }
   });
 
   renderText(operadorEl, getFieldValue(sheetRow, 'OPERADOR', 'AH', OPERADOR_FALLBACK), OPERADOR_FALLBACK);
@@ -2161,6 +2304,33 @@ function updateTime() {
     now.toLocaleDateString('pt-PT', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
 }
 updateTime(); setInterval(updateTime, 1000);
+
+/* ── SYNC: prazo+details = altura do zonas-panel ── */
+(function syncRightHeights() {
+  const zonas = document.querySelector('.zonas-panel');
+  const prazo = document.querySelector('.prazo-section');
+  const details = document.querySelector('.details-section');
+  if (!zonas || !prazo || !details) return;
+
+  // box-sizing: border-box garante que height inclui padding
+  prazo.style.boxSizing = 'border-box';
+  details.style.boxSizing = 'border-box';
+
+  function applyHeight() {
+    const total = zonas.getBoundingClientRect().height;
+    if (total <= 0) return;
+    // Split 75% prazo / 25% details (details é metade do que era no split 50/50)
+    prazo.style.height = `${total * 0.75}px`;
+    details.style.height = `${total * 0.25}px`;
+  }
+
+  // Aplica imediatamente e ao redimensionar
+  applyHeight();
+  window.addEventListener('resize', applyHeight);
+  if (typeof ResizeObserver !== 'undefined') {
+    new ResizeObserver(applyHeight).observe(zonas);
+  }
+})();
 
 /* ── THREE.JS GLOBE ── */
 (function() {
@@ -2345,67 +2515,36 @@ updateTime(); setInterval(updateTime, 1000);
     return group;
   }
 
-  // Marcadores iniciais (Portugal como origem)
+  // Marcadores iniciais (Portugal como origem, sempre)
   let ptRing = addMarker(38.7, -9.1, 0xffffff);
-  let destRing = null;
-  let arc = null;
+  let destRings = [];
 
-  // ── ARC ──
-  function makeArc(latA, lonA, latB, lonB) {
-    const start = coordToPos(latA, lonA, RADIUS + 3);
-    const end   = coordToPos(latB, lonB, RADIUS + 3);
-    const mid   = start.clone().add(end).multiplyScalar(0.5).normalize().multiplyScalar(RADIUS + 80);
-    const curve = new THREE.QuadraticBezierCurve3(start, mid, end);
-    const pts   = curve.getPoints(100);
-    const geo   = new THREE.BufferGeometry().setFromPoints(pts);
-    const mat   = new THREE.LineBasicMaterial({ color: 0x00aaff, transparent: true, opacity: 0.7 });
-    return { line: new THREE.Line(geo, mat), pts };
+  // Atualiza marcadores de destino. Aceita uma lista de nomes de países (ou um único string,
+  // por compatibilidade com a API antiga). Países repetidos são ignorados.
+  function updateGlobeDestinations(countries) {
+    const list = Array.isArray(countries) ? countries : (countries ? [countries] : []);
+
+    // Remover marcadores antigos
+    destRings.forEach(g => globeGroup.remove(g));
+    destRings = [];
+
+    // Deduplicar (case-insensitive, ignorando acentos)
+    const seen = new Set();
+    list.forEach(name => {
+      if (!name) return;
+      const key = String(name).trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      if (key === '' || seen.has(key)) return;
+      seen.add(key);
+      const coords = getCountryCoordinates(name);
+      if (!coords) return;
+      destRings.push(addMarker(coords.lat, coords.lon, 0x00ff87));
+    });
   }
-
-  // ── TRAVEL DOT ──
-  const travDot = new THREE.Mesh(
-    new THREE.SphereGeometry(2.8, 8, 8),
-    new THREE.MeshBasicMaterial({ color: 0x00aaff })
-  );
-  // Posição inicial em Portugal
-  travDot.position.copy(coordToPos(38.7, -9.1, RADIUS + 3));
-  globeGroup.add(travDot);
-
-  const travGlow = new THREE.Mesh(
-    new THREE.SphereGeometry(5.5, 8, 8),
-    new THREE.MeshBasicMaterial({ color: 0x0066ff, transparent: true, opacity: 0.25, blending: THREE.AdditiveBlending, depthWrite: false })
-  );
-  travDot.add(travGlow);
-
-  const travGlow2 = new THREE.Mesh(
-    new THREE.SphereGeometry(9, 8, 8),
-    new THREE.MeshBasicMaterial({ color: 0x0044cc, transparent: true, opacity: 0.1, blending: THREE.AdditiveBlending, depthWrite: false })
-  );
-  travDot.add(travGlow2);
-
-  // Função para atualizar marcadores e arco baseado no país de destino
-  function updateGlobeDestination(countryName) {
-    console.log('Atualizando destino do globo para:', countryName);
-    const destCoords = getCountryCoordinates(countryName);
-    console.log('Coordenadas do destino:', destCoords);
-
-    // Remover marcador e arco antigos, se existirem
-    if (destRing) {
-      globeGroup.remove(destRing);
-      destRing = null;
-    }
-    if (arc && arc.line) {
-      globeGroup.remove(arc.line);
-      arc = null;
-    }
-
-    // Criar novo marcador de destino
-    destRing = addMarker(destCoords.lat, destCoords.lon, 0x00ff87);
-
-    // Criar novo arco
-    arc = makeArc(38.7, -9.1, destCoords.lat, destCoords.lon);
-    globeGroup.add(arc.line);
+  // Wrapper de compatibilidade — código antigo ainda chama updateGlobeDestination(country)
+  function updateGlobeDestination(country) {
+    updateGlobeDestinations(country);
   }
+  window.updateGlobeDestinations = updateGlobeDestinations;
   window.updateGlobeDestination = updateGlobeDestination;
 
   // O destino do globo será atualizado a partir de renderSheetData()
@@ -2430,17 +2569,9 @@ updateTime(); setInterval(updateTime, 1000);
     requestAnimationFrame(animate);
     t += 0.008;
 
-    if (arc && arc.pts && arc.pts.length > 0) {
-      const arcT  = (t * 0.25) % 1;
-      const arcPt = arc.pts[Math.floor(arcT * (arc.pts.length - 1))];
-      if (arcPt) travDot.position.copy(arcPt);
-    }
-
     const p = 0.88 + 0.18 * Math.sin(t * 3);
     ptRing.scale.set(p, p, 1);
-    if (destRing) {
-      destRing.scale.set(p, p, 1);
-    }
+    destRings.forEach(r => r.scale.set(p, p, 1));
 
     if (!isRotating) globeGroup.rotation.y -= 0.0015;
 
