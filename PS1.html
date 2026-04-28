@@ -1,943 +1,2347 @@
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="pt">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>SOMENGIL - PS1</title>
-  <link rel="icon" href="https://static.wixstatic.com/media/a6967f_874354ad69c5461eafd229ab23540233~mv2.png" type="image/png">
-  <link rel="stylesheet" href="styles/index.css">
-  <link rel="stylesheet" href="https://cdn-uicons.flaticon.com/2.5.1/uicons-thin-rounded/css/uicons-thin-rounded.css">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=double_arrow">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SOMENGIL · PM1</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  <style>
-    /* --- CSS GERAL  --- */
-    
-    body, html {
-      margin: 0;
-      padding: 0;
-      overflow-y: auto;
-      overflow-x: hidden;
-      width: 100vw;
-      min-height: 100vh;
-      font-family: 'Open Sans', sans-serif;
-      background: radial-gradient(circle, #020d3a, #000000);
-    }
+:root {
+  --cyan:  #00d4ff;
+  --green: #00ff87;
+  --amber: #ffaa00;
+  --red:   #ff3b3b;
+  --bg:    #03060d;
 
-    /* --- GRID ESPECÍFICO --- */
-    .grid-container {
-      width: clamp(600px, 50vw, 1000px);
-      grid-template-columns: repeat(4, 1fr);
-      grid-template-rows: 1fr 1fr auto auto auto;
-    }
-    
-    /* Ajuste quando houver mais de 3 slots - reduz altura dos cards superiores */
-    .grid-container.expanded-planeamento {
-      grid-template-rows: 0.8fr 0.8fr auto auto;
-    }
-    
-    /* Aumenta altura do card PLANEAMENTO quando expandido */
-    .grid-container.expanded-planeamento .info-panel-card-2 {
-      min-height: 200px;
-    }
+  /* Alturas de referência — centralizam os números mágicos */
+  --header-h: clamp(52px, 6vh, 70px);
+  --footer-h: clamp(46px, 5.5vh, 60px);
+  --side-pad: clamp(20px, 3vw, 48px);
+}
 
-    .destination-card {
-      display: none !important;
-    }
+html, body {
+  width: 100%; height: 100%;
+  background: radial-gradient(circle at center, rgba(81,184,234,1) 0%, rgba(0,0,0,1) 100%);
+  background-attachment: fixed;
+  color: #fff;
+  font-family: 'Barlow Condensed', sans-serif;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
 
-    .card-chart {
-      flex: 1;
-      width: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
+/* ══════════════════════════════════════
+   LAYOUT
+══════════════════════════════════════ */
+.shell {
+  display: grid;
+  grid-template-rows: var(--header-h) 1fr var(--footer-h);
+  height: 100vh;
+  height: 100dvh; /* usa dvh quando disponível para evitar saltos em mobile */
+  position: relative;
+  min-height: 0;
+}
 
-    .info-panel-content-1 {
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 10px;
-      gap: 5px;
-      overflow: hidden;
-    }
+/* ══════════════════════════════════════
+   BACKGROUND TEXTURE
+══════════════════════════════════════ */
+.bg-grid {
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+  background-size: 48px 48px;
+  pointer-events: none;
+  z-index: 0;
+}
 
-    .buffer-item {
-      font-size: clamp(9px, 0.9vw, 12px);
-      font-weight: 600;
-      padding: 4px 8px;
-      background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 6px;
-      color: white;
-      width: 90%;
-      text-align: center;
-      transition: all 0.3s ease;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
+.bg-glow-left {
+  position: fixed;
+  left: -200px; top: 20%;
+  width: 600px; height: 600px;
+  background: radial-gradient(circle, rgba(255,255,255,0.06) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
 
-    .buffer-item.active {
-      background: rgba(75, 140, 242, 0.3);
-      border: 2px solid rgba(75, 140, 242, 0.8);
-      box-shadow: 0 0 10px rgba(75, 140, 242, 0.5);
-      font-weight: bold;
-      animation: pulse-active 2s ease-in-out infinite;
-    }
+.bg-glow-right {
+  position: fixed;
+  right: -100px; bottom: 10%;
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(0,80,120,0.15) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
 
-    .buffer-item.active-weak {
-      background: rgba(75, 140, 242, 0.12);
-      border: 1px solid rgba(75, 140, 242, 0.35);
-      box-shadow: 0 0 6px rgba(75, 140, 242, 0.25);
-      font-weight: 600;
-    }
+/* ══════════════════════════════════════
+   HEADER
+══════════════════════════════════════ */
+header {
+  position: relative; z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--side-pad);
+  background: rgba(0,20,40,0.35);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255,255,255,0.15);
+  min-height: 0;
+}
 
-    .buffer-item.active-slot2 {
-      background: rgba(192, 192, 192, 0.3);
-      border: 2px solid rgba(192, 192, 192, 0.8);
-      box-shadow: 0 0 10px rgba(192, 192, 192, 0.5);
-      font-weight: bold;
-      animation: pulse-active-slot2 2s ease-in-out infinite;
-    }
+.h-logo {
+  display: flex; align-items: center; gap: 14px;
+}
+.h-logo img { height: clamp(26px, 4vh, 36px); width: auto; display: block; }
 
-    .buffer-item.active-slot3 {
-      background: rgba(255, 215, 0, 0.3);
-      border: 2px solid rgba(255, 215, 0, 0.8);
-      box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
-      font-weight: bold;
-      animation: pulse-active-slot3 2s ease-in-out infinite;
-    }
+.h-brand {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(24px, 3vh, 36px);
+  letter-spacing: 6px; color: #fff;
+  text-shadow: 0 0 30px rgba(255,255,255,0.3);
+}
 
-    .buffer-item.active-slot4 {
-      background: rgba(255, 99, 71, 0.3);
-      border: 2px solid rgba(255, 99, 71, 0.8);
-      box-shadow: 0 0 10px rgba(255, 99, 71, 0.5);
-      font-weight: bold;
-      animation: pulse-active-slot4 2s ease-in-out infinite;
-    }
+.h-center {
+  position: absolute; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: clamp(10px, 1.5vw, 20px);
+}
 
-    @keyframes pulse-active {
-      0%, 100% { box-shadow: 0 0 10px rgba(75, 140, 242, 0.5); }
-      50% { box-shadow: 0 0 20px rgba(75, 140, 242, 0.8); }
-    }
+.h-badge {
+  font-size: clamp(12px, 1.6vh, 16px); font-weight: 700; letter-spacing: 4px;
+  text-transform: uppercase; color: rgba(255,255,255,0.75);
+  white-space: nowrap;
+}
 
-    @keyframes pulse-active-slot2 {
-      0%, 100% { box-shadow: 0 0 10px rgba(192, 192, 192, 0.5); }
-      50% { box-shadow: 0 0 20px rgba(192, 192, 192, 0.8); }
-    }
+.h-sep { width: 5px; height: 5px; border-radius: 50%; background: rgba(255,255,255,0.4); flex-shrink: 0; }
 
-    @keyframes pulse-active-slot3 {
-      0%, 100% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
-      50% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.8); }
-    }
+.h-op {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(18px, 2.6vh, 26px); letter-spacing: 3px; color: #fff;
+  text-shadow: 0 0 20px rgba(255,255,255,0.5);
+  white-space: nowrap;
+}
 
-    @keyframes pulse-active-slot4 {
-      0%, 100% { box-shadow: 0 0 10px rgba(255, 99, 71, 0.5); }
-      50% { box-shadow: 0 0 20px rgba(255, 99, 71, 0.8); }
-    }
+.h-time {
+  font-size: clamp(14px, 2vh, 20px); letter-spacing: 2px; color: rgba(255,255,255,0.85);
+  white-space: nowrap;
+}
 
-    .info-panel-content-1 .info-line {
-      font-size: clamp(70px, 10vw, 120px) !important;
-      font-weight: bold;
-      line-height: 0.95;
-      white-space: nowrap;
-      color: white;
-    }
+.h-priority {
+  position: absolute;
+  top: clamp(8px, 1.4vh, 14px);
+  right: clamp(10px, 1.5vw, 18px);
+  z-index: 3;
+  display: flex; flex-direction: column; align-items: flex-end;
+  line-height: 1.05;
+  padding: 4px 10px;
+  border-left: 2px solid rgba(255, 255, 255, 0.5);
+  border-right: 2px solid rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.05);
+}
+.h-priority-label {
+  font-size: clamp(9px, 1.2vh, 12px);
+  font-weight: 700; letter-spacing: 3px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.85);
+}
+.h-priority-value {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(14px, 2.2vh, 22px);
+  letter-spacing: 2px;
+  color: #fff;
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.4);
+  white-space: nowrap;
+}
+.h-priority.is-empty .h-priority-value {
+  color: rgba(255,255,255,0.4);
+  text-shadow: none;
+}
 
-    .info-panel-content-2, .info-panel-content-3 {
-      width: 100%;
-      padding: 5px;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
+/* Variante esquerda: posicionada no canto superior esquerdo */
+.h-priority-left {
+  right: auto;
+  left: clamp(10px, 1.5vw, 18px);
+  align-items: flex-start;
+}
 
-    .info-panel-card-2 .card-title {
-        text-align: center !important;
-        padding-left: 10px;
-        padding-right: 10px;
-      font-size: 14px !important;
-        width: 100%;
-        box-sizing: border-box;
-        white-space: nowrap;
-        overflow: visible;
-        line-height: 1.2;
-    }
-    .info-panel-card-2 .info-panel-content-2 {
-        align-items: flex-start !important;
-        text-align: left;
-        padding: 10px !important;
-        overflow: hidden;
-        height: 100%;
-        display: grid;
-      grid-template-columns: 1fr;
-        gap: 8px;
-        align-content: start;
-    }
-    
-    /* Grid 1x2 quando houver 2 lotes */
-    .info-panel-content-2.two-rows {
-      grid-template-columns: 1fr;
-      grid-template-rows: repeat(2, 1fr);
-      gap: 6px;
-    }
-    
-    /* Grid 2x2 quando houver 3+ lotes */
-    .info-panel-content-2.multi-slot {
-      grid-template-columns: repeat(2, 1fr);
-      grid-template-rows: repeat(2, 1fr);
-      gap: 6px;
-    }
-    
-    /* Quando há apenas 1 slot */
-    .info-panel-content-2:has(.slot-column:only-child) {
-        display: flex;
-        flex-direction: column;
-        justify-content: space-evenly;
-        padding-left: 10px !important;
-    }
-    
-    .slot-column {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-        padding: 6px;
-        background: rgba(0, 0, 0, 0.2);
-        border-radius: 4px;
-        border-left: 3px solid rgba(255, 255, 255, 0.3);
-        min-height: fit-content;
+/* ══════════════════════════════════════
+   MAIN
+══════════════════════════════════════ */
+main {
+  position: relative; z-index: 2;
+  display: grid;
+  grid-template-columns: 1fr clamp(340px, 32vw, 475px);
+  gap: 0;
+  overflow: hidden;
+  min-height: 0;
+  min-width: 0;
+}
 
-    }
-    
-    /* Remove estilo de background quando há apenas 1 slot */
-    .info-panel-content-2:has(.slot-column:only-child) .slot-column {
-        background: transparent;
-        border-left: none;
-        padding: 0;
-    }
-    
-.slot-column .info-line {
-    display: block;        /* Garante que ocupe a linha toda */
-    width: 100%;           /* Força a largura total do container pai */
-    box-sizing: border-box; /* Impede que padding/border "estourem" a largura */
-    
-    word-wrap: break-word;
-    overflow-wrap: break-word;
-    hyphens: auto;
-    line-height: 1.2;
-    font-size: 20px;
-    
-    /* Opcional: se quiser que o texto ocupe o espaço visualmente 
-       distribuído, use text-align */
-    /* text-align: justify; */
- }
-    
-    /* Texto menor quando houver mais de 1 lote */
-    .info-panel-content-2.two-rows .slot-column .info-line,
-    .info-panel-content-2.multi-slot .slot-column .info-line {
-      font-size: clamp(8px, 0.75vw, 11px);
-    }
-    
-    .info-panel-card-3 .card-title {
-        font-size: clamp(17px, 1.7vw, 21px) !important;
-    }
+/* ══════════════════════════════════════
+   LEFT PANEL
+   Mudança principal: em vez de 1.2fr / 1px / 0.8fr (que pode esmagar zonas),
+   as zonas recebem auto (pelo conteúdo) e o hero recebe 1fr (enche o resto).
+   Assim, quando a altura encolhe, é o hero que encolhe primeiro — e nunca as zonas.
+══════════════════════════════════════ */
+.left {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) 1px auto;
+  border-right: 1px solid rgba(255,255,255,0.12);
+  min-height: 0;
+  min-width: 0;
+}
 
-    .info-panel-content-5 {
-      align-items: stretch;
-      grid-auto-rows: minmax(0, 1fr);
-      row-gap: 10px;
-      column-gap: 10px;
-    }
+.divider-h { background: rgba(255,255,255,0.1); }
 
-    .info-panel-content-5 > div {
-      height: 100%;
-      min-height: 0;
-      box-sizing: border-box;
-    }
+/* TOP LEFT — HERO */
+.hero {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  overflow: hidden;
+  min-height: 0;
+}
 
-    /* --- NOVAS LINHAS: PRIORIDADE ATIVA --- */
-    #grid-item-1, #grid-item-2,
-    #grid-item-4, #grid-item-5 {
-      grid-column: span 1;
-      min-height: 160px;
-    }
+.hero-evolucao {
+  padding: clamp(16px, 3vh, 32px) clamp(20px, 3vw, 40px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border-right: 1px solid rgba(255,255,255,0.08);
+  position: relative;
+  overflow: visible;
+  background: rgba(0,20,50,0.2);
+  min-height: 0;
+  min-width: 0;
+}
 
-    #grid-item-3, #grid-item-6 {
-      display: none;
-    }
+.hero-evolucao::before {
+  content: '';
+  position: absolute;
+  left: -20px; top: -20px;
+  width: 200px; height: 200px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.hero-evolucao::after {
+  content: '';
+  position: absolute;
+  left: -60px; top: -60px;
+  width: 320px; height: 320px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.04);
+}
 
-    #grid-item-7 {
-      grid-column: span 2;
-      min-height: 160px;
-    }
+.ev-label {
+  font-size: 16px; font-weight: 700; letter-spacing: 5px;
+  text-transform: uppercase; color: rgba(255,255,255,0.75);
+  margin-bottom: 8px; position: relative; z-index: 1;
+}
 
-    #grid-item-8 {
-      grid-column: span 1;
-      min-height: 160px;
-    }
+.ev-number {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(120px, 15vw, 200px);
+  line-height: .85;
+  letter-spacing: -2px;
+  position: relative; z-index: 1;
+}
 
-    #grid-item-7, #grid-item-8 {
-      min-height: 160px;
-    }
+.ev-sub {
+  font-size: 18px; letter-spacing: 4px;
+  color: rgba(255,255,255,0.75);
+  text-transform: uppercase;
+  margin-top: 12px; position: relative; z-index: 1;
+}
 
-    /* Hide separate percent card since it's now merged into PRIORIDADE ATIVA */
-    #grid-item-8 {
-      display: none;
-    }
+/* HERO RIGHT — IDENTIDADE
+   Fontes reduzidas e fluidas para poupar altura vertical.
+*/
+.hero-id {
+  padding: clamp(16px, 3vh, 32px) clamp(20px, 3vw, 40px);
+  display: flex; flex-direction: column; justify-content: center;
+  gap: 0;
+  background: rgba(0,10,30,0.15);
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
 
-    #grid-item-9 {
-      min-height: 160px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: rgba(0, 0, 0, 0.3);
-      border-radius: 8px;
-    }
+.id-modelo-label,
+.id-cliente-label {
+  font-size: clamp(18px, 2.4vh, 32px);
+  font-weight: 700; letter-spacing: 5px;
+  text-transform: uppercase; color: rgba(255,255,255,0.7);
+  margin-bottom: clamp(4px, 0.8vh, 10px);
+}
 
-    #grid-item-9 .card-title {
-      font-size: clamp(108px, 8vw, 116px) !important;
-      font-weight: bold;
-      color: white;
-      margin: 0 !important;
-    }
+.id-modelo {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(42px, 5.5vw, 92px);
+  letter-spacing: 2px; color: #fff;
+  line-height: 1;
+  margin-bottom: clamp(4px, 0.8vh, 8px);
+}
 
-    #grid-item-11 {
-      grid-column: span 1;
-      min-height: 160px;
-      overflow: hidden;
-      border-radius: 8px;
-    }
+.id-lote {
+  font-size: clamp(22px, 3.6vh, 46px);
+  color: rgba(255,255,255,0.8);
+  letter-spacing: 1px;
+  margin-bottom: clamp(14px, 3vh, 36px);
+}
 
-    #grid-item-11 video {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
+.id-cliente {
+  font-size: clamp(21.42px, 2.45vw, 48.96px);
+  font-weight: 700;
+  text-transform: uppercase; letter-spacing: 1px;
+  color: #fff; line-height: 1.1;
+  margin-bottom: clamp(4px, 0.8vh, 10px);
+}
 
-    /* --- BOTTOM SECTION --- */
-    .bottom-section {
-      grid-column: 1 / -1;
-      display: flex;
-      gap: 10px;
-      min-height: 0;
-      height: 18vh;
-      max-height: 200px;
-      align-items: stretch;
-    }
+.id-pais {
+  display: flex; align-items: center; gap: clamp(8px, 1vw, 14px);
+}
+.id-flag {
+  font-size: clamp(32px, 5vh, 64px);
+  line-height: 1;
+}
+.id-pais-info {
+  font-size: clamp(20px, 3.2vh, 44px);
+  letter-spacing: 2px;
+  color: rgba(255,255,255,0.8); text-transform: uppercase;
+}
 
-    .bottom-section .grid-item {
-      flex: 1 1 0;
-      min-width: 0;
-    }
+/* Modo grid 2x2 quando há mais do que um país */
+.id-pais.is-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(6px, 1vh, 12px) clamp(14px, 2vw, 28px);
+  align-items: center;
+}
+.id-pais-cell {
+  display: flex;
+  align-items: center;
+  gap: clamp(6px, 0.8vw, 10px);
+  min-width: 0;
+}
+.id-pais-cell .id-flag {
+  font-size: clamp(20px, 3vh, 36px);
+  flex-shrink: 0;
+}
+.id-pais-cell .id-pais-info {
+  font-size: clamp(14px, 2vh, 24px);
+  letter-spacing: 1.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
-    .bottom-section .card-title,
-    .bottom-section .info-line,
-    .bottom-section .buffer-item,
-    .bottom-section .info-panel-content-5,
-    .bottom-section .info-panel-content-5 > div,
-    .bottom-section .slot-column {
-      max-width: 100%;
-      white-space: normal;
-      overflow-wrap: anywhere;
-      word-break: break-word;
-    }
+/* BOTTOM LEFT — ZONAS
+   Paddings e fontes agora fluidos para garantir que cabem sempre.
+*/
+.zonas-panel {
+  padding: clamp(14px, 2.4vh, 28px) clamp(20px, 3vw, 40px);
+  display: flex; flex-direction: column; gap: 0;
+  background: rgba(0,15,40,0.2);
+  min-height: 0;
+  min-width: 0;
+}
 
-    .bottom-section .buffer-item {
-      text-overflow: clip;
-    }
+.zonas-title {
+  font-size: clamp(16px, 2.2vh, 22px);
+  font-weight: 700; letter-spacing: 5px;
+  text-transform: uppercase; color: rgba(255,255,255,0.75);
+  margin-bottom: clamp(10px, 1.6vh, 16px);
+}
 
-    .goal-chart-container {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-        height: 100%;
-        padding: 5px;
-        box-sizing: border-box;
-        overflow: hidden;
-    }
-    
-    .goal-chart {
-        width: 100%;
-        height: 100%;
-        max-width: 100%;
-        max-height: 100%;
-        display: block;
-    }
+.zonas-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-auto-rows: 1fr;
+  gap: clamp(10px, 1.6vh, 16px) clamp(14px, 2vw, 24px);
+  flex: 1;
+  min-height: 0;
+}
 
-    /* --- IMAGE + STATUS WRAPPER --- */
-    .info-panel-image-container {
-      position: relative;
-      width: 100%;
-      height: 100%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
+.zona-card {
+  display: flex; flex-direction: column;
+  gap: clamp(4px, 0.8vh, 8px);
+  padding: clamp(10px, 1.6vh, 16px) clamp(12px, 1.4vw, 18px);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 10px;
+  background: rgba(255,255,255,0.07);
+  backdrop-filter: blur(8px);
+  position: relative;
+  overflow: hidden;
+  transition: border-color .3s, background .3s;
+  min-width: 0;
+}
 
-    .image-wrapper {
-      position: relative;
-      height: 100%; 
-      width: auto;
-      display: flex;
-      align-items: center;
-    }
+.zona-card.done  { border-color: rgba(0,255,135,0.4);  background: rgba(0,255,135,0.08); }
+.zona-card.going { border-color: rgba(255,255,255,0.25); background: rgba(255,255,255,0.1); }
+.zona-card.empty { border-color: rgba(255,255,255,0.06); background: rgba(0,0,0,0.15); }
 
-    .info-panel-image {
-      height: 100%; 
-      width: auto; 
-      max-width: 100%;
-      object-fit: contain;
-      padding: 5px;
-    }
+/* Card que ocupa 2 linhas do grid (ex: Planeamento, Testes) */
+.zona-card.tall { grid-row: span 2; }
 
-    /* --- PROGRESS BAR (Desktop) --- */
-    .progress-bar-container {
-      position: fixed;
-      bottom: 8vh;
-      left: 25vw; 
-      transform: translateX(-50%);
-      width: clamp(200px, 30vw, 500px);
-      z-index: 1000;
-      pointer-events: none;
-      display: flex;
-      flex-direction: column-reverse;
-      gap: 8px;
-    }
+.zona-card-label {
+  font-size: clamp(14px, 1.8vh, 22px);
+  font-weight: 700; letter-spacing: 3px;
+  text-transform: uppercase; color: rgba(255,255,255,0.75);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.zona-card.done  .zona-card-label { color: #00ff87; }
+.zona-card.going .zona-card-label { color: #fff; }
+.zona-card.empty .zona-card-label { color: rgba(255,255,255,0.4); }
 
-    .progress-bar-wrapper {
-      width: 100%;
-      height: 12px;
-      background-color: rgba(255, 255, 255, 0.1);
-      border-radius: 20px;
-      overflow: hidden;
-      pointer-events: auto;
-    }
+.zona-card-pct {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(38px, 6vh, 72px);
+  line-height: 1; letter-spacing: 1px;
+}
 
-    .progress-bar-fill {
-      height: 100%;
-      background: linear-gradient(90deg, #80a5dc 0%, #4b8cf2 50%, #007bff 100%);
-      width: 0%;
-      transition: width 0.5s ease;
-    }
-    
-    .dg.a { margin-top: 10px; }
-    .dg .close-button, .dg .close, .dg .title { display: none !important; }
+.zona-card-bar {
+  height: clamp(6px, 1vh, 10px);
+  background: rgba(255,255,255,0.12);
+  border-radius: 5px; overflow: hidden;
+}
+.zona-card-fill { height: 100%; border-radius: 5px; }
 
-    /* --- MEDIA QUERIES (MOBILE) --- */
-    @media (max-width: 1024px) {
-      .grid-container {
-        width: 35vw;
-        top: 12vh;
-        gap: 10px;
-      }
-    }
+/* Variante: card em modo lista (ex: Área Técnica → últimos lotes em soldadura) */
+.zona-card.list {
+  gap: clamp(2px, 0.4vh, 4px);
+  justify-content: flex-start;
+}
+.zona-card.list .zona-card-label {
+  margin-bottom: clamp(2px, 0.4vh, 4px);
+}
+.zona-card-list-header {
+  font-size: clamp(10px, 1.2vh, 12px);
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.5);
+  padding-bottom: clamp(2px, 0.4vh, 4px);
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.zona-card-list-items {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(1px, 0.3vh, 3px);
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.zona-card-list-item {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: clamp(13px, 1.7vh, 18px);
+  font-weight: 600;
+  color: rgba(255,255,255,0.9);
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.25;
+}
+.zona-card-list-empty {
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: clamp(12px, 1.5vh, 16px);
+  color: rgba(255,255,255,0.35);
+  font-style: italic;
+}
 
-    @media (max-width: 768px) {
-      body, html {
-        overflow-y: auto !important;
-        overflow-x: hidden !important;
-      }
-      
-      .top-left-logo, .top-right-logo { 
-        width: calc(50% - 16px) !important;
-        max-width: 200px !important;
-        height: auto !important;
-        top: 8px !important;
-        z-index: 9998;
-      }
-      
-      .top-left-logo {
-        left: 8px !important;
-      }
-      
-      .top-right-logo {
-        right: 8px !important;
-      }
-      
-      .destination-card {
-        display: none !important;
-      }
-      
-      /* Oculta o ícone WiFi em mobile */
-      #network-status-container {
-        display: none !important;
-      }
+/* Variante: card com um único valor centrado (ex: Próxima Prioridade) */
+.zona-card.single {
+  justify-content: space-between;
+}
+.zona-card-single-value {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(28px, 5vh, 56px);
+  letter-spacing: 1px;
+  color: #fff;
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.4);
+  line-height: 1;
+  padding: 0 4px;
+  min-height: 0;
+  text-align: center;
+  word-break: break-word;
+}
+.zona-card.single.empty .zona-card-single-value {
+  color: rgba(255,255,255,0.35);
+  text-shadow: none;
+  font-size: clamp(20px, 3vh, 32px);
+}
 
-      .grid-container {
-        top: 85px !important;
-        bottom: 10px !important;
-        right: 8px !important;
-        left: 8px !important;
-        width: auto !important;
-        height: auto !important;
-        grid-template-columns: repeat(2, 1fr) !important;
-        grid-template-rows: 1.2fr 1.2fr 1.21fr 1fr 0.9fr 0.9fr 0.9fr 0.9fr 0.9fr !important;
-        gap: 6px !important;
-        overflow-y: auto !important;
-        overflow-x: hidden !important;
-      }
-      
-      /* Todos os cards com altura igual preenchendo o grid */
-      .grid-item {
-        min-height: 0 !important;
-        height: 100% !important;
-        padding: 4px !important;
-      }
-      
-      /* Cards com pie charts (1-6) precisam de padding menor */
-      #grid-item-1, #grid-item-2, #grid-item-3,
-      #grid-item-4, #grid-item-5, #grid-item-6 {
-        padding: 3px !important;
-      }
-      
-      /* CRÍTICO: Garante que os containers dos pie charts têm dimensões adequadas */
-      .card-chart {
-        min-width: 90px !important;
-        min-height: 90px !important;
-        width: 100% !important;
-        height: 100% !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-      }
-      
-      #grid-item-1, #grid-item-2, #grid-item-3,
-      #grid-item-4, #grid-item-5, #grid-item-6,
-      #grid-item-8, #grid-item-9, #grid-item-11 {
-        grid-column: span 1 !important;
-        min-height: 0 !important;
-      }
-      
-      /* Reposiciona os itens no grid 2x9 */
-      #grid-item-1 { grid-column: 1; grid-row: 1; }
-      #grid-item-2 { grid-column: 2; grid-row: 1; }
-      #grid-item-3 { display: none !important; }
-      #grid-item-4 { grid-column: 1; grid-row: 2; }
-      #grid-item-5 { grid-column: 2; grid-row: 2; }
-      #grid-item-6 { display: none !important; }
-      #grid-item-7 { grid-column: 1 / -1 !important; grid-row: 3; min-height: 0 !important; }
-      #grid-item-9 { grid-column: 1; grid-row: 4; }
-      #grid-item-11 { grid-column: 2; grid-row: 4; }
-      
-      /* --- BOTTOM SECTION ocupa as últimas 5 linhas --- */
-      .bottom-section { 
-          display: grid !important;
-          grid-column: 1 / -1 !important;
-          grid-row: 5 / 10 !important;
-          grid-template-columns: repeat(2, 1fr) !important;
-          grid-template-rows: 1fr 1fr auto auto 1fr !important;
-          gap: 6px !important;
-          height: 100% !important;
-          min-height: 0 !important;
-          max-height: none !important;
-      }
-      
-      /* Posiciona os 5 cards do bottom section */
-      .info-panel-card-2 { grid-column: 1; grid-row: 1 / 3; }
-      .info-panel-card-1 { grid-column: 2; grid-row: 1 / 3; }
-      .info-panel-card-5 { grid-column: 1 / -1; grid-row: 3 / 5; }
-      .info-panel-card-3 { grid-column: 1; grid-row: 5; }
-      .info-panel-card-4 { grid-column: 2; grid-row: 5; }
-      
-      /* Ajuste do card PLANEAMENTO no mobile */
-      .info-panel-card-2 .card-title {
-          font-size: 14px !important;
-          padding-left: 6px !important;
-          padding-right: 6px !important;
-          width: 100%;
-          box-sizing: border-box;
-          white-space: nowrap;
-          overflow: visible;
-          line-height: 1.2;
-      }
-      
-      .info-panel-card-2 .info-panel-content-2 {
-          grid-template-columns: 1fr !important;
-          gap: 4px !important;
-          padding: 6px !important;
-      }
-      
-      /* Grid 2x2 no mobile quando houver 3+ slots */
-      .info-panel-content-2.multi-slot {
-          grid-template-columns: repeat(2, 1fr) !important;
-          gap: 3px !important;
-      }
-      
-      .slot-column {
-          font-size: clamp(8px, 2vw, 11px) !important;
-          padding: 3px !important;
-      }
-      
-      /* Ajustes dos outros cards */
-      .card-title {
-          font-size: clamp(10px, 2.5vw, 14px) !important;
-          margin-bottom: 2px !important;
-      }
-      
-      /* Títulos dos cards com charts ainda menores */
-      #grid-item-1 .card-title,
-      #grid-item-2 .card-title,
-      #grid-item-3 .card-title,
-      #grid-item-4 .card-title,
-      #grid-item-5 .card-title,
-      #grid-item-6 .card-title {
-          font-size: clamp(9px, 2.2vw, 12px) !important;
-          margin-bottom: 1px !important;
-      }
-      
-      .info-panel-card-3 .card-title {
-          font-size: clamp(10px, 2.5vw, 14px) !important;
-      }
-      
-      /* Ajuste do indicador no mobile */
-      .status-indicator {
-          width: 5px !important;
-          right: 2px !important;
-      }
-      
-      /* Chart de goal menor */
-      .goal-chart-container {
-          padding: 2px !important;
-      }
-      
-      /* Log operacional com texto menor */
-      .info-panel-content-5 {
-          font-size: clamp(7px, 1.8vw, 10px) !important;
-          padding: 4px !important;
-          gap: 4px !important;
-      }
-      
-      /* Log operacional com altura responsiva ao conteúdo */
-      .info-panel-card-5 {
-          height: auto !important;
-          min-height: fit-content !important;
-      }
-      
-      /* Progress bar fica FORA do grid, no topo */
-      .progress-bar-container {
-        display: none !important;
-      }
-    }
-  </style>
+/* ══════════════════════════════════════
+   RIGHT PANEL
+══════════════════════════════════════ */
+.right {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: rgba(0,10,30,0.25);
+  backdrop-filter: blur(4px);
+  min-height: 0;
+  min-width: 0;
+}
 
-  <script>
-    // Refresh automático a cada 10 minutos
-    const REFRESH_INTERVAL_MS = 10 * 60 * 1000;
+/* GLOBO / EVOLUÇÃO */
+.globe-section {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  overflow: hidden;
+  min-height: 0;
+  padding: clamp(10px, 1.5vh, 20px) 0;
+}
 
-    setInterval(() => {
-      location.reload();
-    }, REFRESH_INTERVAL_MS);
+/* PRAZO */
+.prazo-section {
+  padding: clamp(14px, 2.2vh, 24px) clamp(18px, 2vw, 28px);
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
 
-    // Monitoramento da coluna Z (GERAL) para refresh automático
-    let lastGeralValue = null;
-    const CHECK_INTERVAL = 30000; // Verifica a cada 30 segundos
+.prazo-top {
+  display: flex; justify-content: space-between; align-items: flex-end;
+  margin-bottom: clamp(8px, 1.2vh, 12px);
+  gap: 10px;
+}
 
-    async function checkGeralColumnChange() {
-      try {
-        const url = `https://docs.google.com/spreadsheets/d/1GQUB52a2gKR429bjqJrNkbP5rjR7Z_4v85z9M7_Cr8Y/gviz/tq?tqx=out:json&sheet=PS4`;
-        const response = await fetch(url);
-        
-        if (!response.ok) return;
-        
-        const text = await response.text();
-        const jsonString = text.substring(47, text.length - 2);
-        const json = JSON.parse(jsonString);
-        
-        const cols = json.table.cols;
-        const rows = json.table.rows;
-        
-        // Encontra o índice da coluna GERAL (coluna Z)
-        const geralColIndex = cols.findIndex(col => 
-          (col.label || '').toUpperCase() === 'GERAL'
-        );
-        
-        if (geralColIndex === -1) {
-          console.warn('⚠️ Coluna GERAL não encontrada');
-          return;
-        }
-        
-        // Pega todos os valores da coluna GERAL (exceto cabeçalho)
-        const geralValues = rows
-          .map(row => row.c[geralColIndex]?.v)
-          .filter(val => val !== null && val !== undefined)
-          .join('|'); // Concatena todos os valores
-        
-        // Verifica se houve mudança
-        if (lastGeralValue !== null && lastGeralValue !== geralValues) {
-          console.log('🔄 Coluna GERAL alterada! Fazendo refresh...');
-          location.reload();
-        } else if (lastGeralValue === null) {
-          console.log('📊 Valor inicial da coluna GERAL registrado');
-        }
-        
-        lastGeralValue = geralValues;
-        
-      } catch (error) {
-        console.error('❌ Erro ao verificar coluna GERAL:', error);
-      }
-    }
+.prazo-label {
+  font-size: clamp(13px, 1.6vh, 16px);
+  font-weight: 700; letter-spacing: 5px;
+  text-transform: uppercase; color: rgba(255,255,255,0.75);
+}
 
-    // Inicia a verificação periódica
-    setInterval(checkGeralColumnChange, CHECK_INTERVAL);
-    
-    // Primeira verificação após 5 segundos (dá tempo para a página carregar)
-    setTimeout(checkGeralColumnChange, 5000);
-  </script>
+.prazo-folga {
+  font-size: clamp(14px, 1.8vh, 18px);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  text-align: right;
+}
+
+.prazo-numbers {
+  display: flex; align-items: baseline; gap: 6px;
+  margin-bottom: clamp(10px, 1.4vh, 14px);
+}
+.prazo-used {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(52px, 8vh, 80px);
+  line-height: .9; letter-spacing: -1px;
+}
+.prazo-div { font-size: clamp(24px, 3.6vh, 36px); color: rgba(255,255,255,0.4); font-weight: 300; }
+.prazo-total { font-size: clamp(32px, 4.8vh, 48px); color: #fff; font-weight: 300; letter-spacing: -1px; }
+.prazo-unit { font-size: clamp(14px, 1.8vh, 18px); letter-spacing: 3px; text-transform: uppercase; color: rgba(255,255,255,0.75); align-self: flex-end; padding-bottom: clamp(6px, 1vh, 10px); }
+
+.prazo-track {
+  height: clamp(8px, 1.2vh, 12px);
+  background: rgba(255,255,255,0.12);
+  border-radius: 6px; overflow: hidden;
+}
+.prazo-fill-bar {
+  height: 100%;
+  border-radius: 6px;
+  position: relative;
+  overflow: hidden;
+}
+.prazo-fill-bar::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 50%;
+  background: rgba(255,255,255,0.2);
+  border-radius: 6px 6px 0 0;
+}
+
+/* DETALHES */
+.details-section {
+  padding: clamp(12px, 1.8vh, 20px) clamp(18px, 2vw, 28px);
+  display: flex; flex-direction: column; gap: 0;
+}
+
+.detail-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: clamp(6px, 1vh, 9px) 0;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.detail-row:last-child { border-bottom: none; }
+
+.d-k {
+  font-size: clamp(11px, 1.4vh, 14px);
+  font-weight: 700; letter-spacing: 3px;
+  text-transform: uppercase; color: rgba(255,255,255,0.7);
+}
+.d-v {
+  font-size: clamp(16px, 2vh, 20px);
+  font-weight: 700;
+  color: #fff; letter-spacing: .5px;
+}
+
+/* ══════════════════════════════════════
+   FOOTER
+══════════════════════════════════════ */
+footer {
+  position: relative; z-index: 2;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 var(--side-pad);
+  background: rgba(0,20,40,0.35);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(255,255,255,0.12);
+  min-height: 0;
+  gap: 10px;
+}
+
+.f-left { display: flex; align-items: center; gap: clamp(8px, 1vw, 16px); min-width: 0; }
+.f-dot  { width: 12px; height: 12px; border-radius: 50%; background: var(--green); box-shadow: 0 0 12px var(--green); flex-shrink: 0; }
+.f-status { font-size: clamp(12px, 1.6vh, 16px); font-weight: 700; letter-spacing: 4px; text-transform: uppercase; color: var(--green); white-space: nowrap; }
+.f-op-label { font-size: clamp(11px, 1.4vh, 14px); letter-spacing: 3px; text-transform: uppercase; color: rgba(255,255,255,0.75); white-space: nowrap; }
+.f-op { font-size: clamp(16px, 2vh, 22px); font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #fff; white-space: nowrap; }
+
+.f-right { text-align: right; flex-shrink: 0; }
+.f-date  { font-size: clamp(13px, 1.8vh, 18px); letter-spacing: 2px; color: rgba(255,255,255,0.85); white-space: nowrap; }
+
+/* ══════════════════════════════════════
+   TOP ACCENT
+══════════════════════════════════════ */
+.top-accent {
+  position: fixed; top: 0; left: 0; right: 0; height: 2px; z-index: 100;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6) 30%, rgba(255,255,255,0.6) 70%, transparent);
+}
+
+/* ══════════════════════════════════════
+   MEDIA QUERIES — ajuste em ecrãs baixos
+   Quando a altura da viewport é pequena (típico em 13" touchscreen
+   industrial), encolhemos ainda mais o hero-id e damos prioridade às zonas.
+══════════════════════════════════════ */
+@media (max-height: 820px) {
+  .hero-id { padding-top: 14px; padding-bottom: 14px; }
+  .id-lote { margin-bottom: 14px; }
+  .id-cliente-label { margin-top: 0 !important; }
+}
+
+@media (max-height: 720px) {
+  /* Em ecrãs muito baixos, esconde decorações laterais do globo para poupar GPU */
+  .hero-evolucao::before,
+  .hero-evolucao::after { display: none; }
+
+  /* Labels de ID mais compactas */
+  .id-modelo-label,
+  .id-cliente-label { letter-spacing: 3px; }
+
+  /* Centraliza o hero-id verticalmente para aproveitar espaço */
+  .hero-id { gap: 0; }
+}
+
+@media (max-height: 620px) {
+  /* Em alturas críticas, o hero-id passa de 2 blocos (modelo + cliente)
+     para layout mais apertado e o globo fica um pouco mais pequeno. */
+  .id-lote { margin-bottom: 8px; }
+  .zonas-grid { gap: 8px 12px; }
+  .zona-card { padding: 8px 12px; }
+  .zona-card-pct { font-size: clamp(32px, 5vh, 48px); }
+}
+
+/* Ecrãs estreitos — empilha painéis (útil se a unidade rodar em portrait) */
+@media (max-width: 900px) {
+  html, body {
+    min-width: 0;
+  }
+
+  .shell {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  main {
+    width: 100%;
+    max-width: 100%;
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr auto;
+  }
+
+  .left,
+  .right,
+  .zonas-panel,
+  .prazo-section,
+  .details-section,
+  .hero,
+  .hero-evolucao,
+  .hero-id {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .hero {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-evolucao,
+  .hero-id,
+  .zonas-panel,
+  .prazo-section,
+  .details-section {
+    padding-left: clamp(12px, 3vw, 20px);
+    padding-right: clamp(12px, 3vw, 20px);
+  }
+
+  .hero-evolucao {
+    padding-top: clamp(14px, 2.5vh, 22px);
+    padding-bottom: clamp(14px, 2.5vh, 22px);
+  }
+
+  .hero-id {
+    padding-top: clamp(14px, 2.5vh, 22px);
+    padding-bottom: clamp(14px, 2.5vh, 22px);
+  }
+
+  .prazo-numbers {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .prazo-used {
+    font-size: clamp(40px, 10vw, 60px);
+  }
+
+  .prazo-div,
+  .prazo-total {
+    font-size: clamp(22px, 6vw, 34px);
+  }
+
+  .prazo-unit {
+    font-size: clamp(12px, 3.5vw, 16px);
+  }
+
+  .zona-card {
+    padding: clamp(8px, 1.2vh, 12px);
+  }
+
+  .zonas-grid {
+    width: 100%;
+    max-width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(8px, 1.2vh, 12px) clamp(10px, 2vw, 14px);
+    grid-auto-rows: minmax(0, auto);
+  }
+
+  .zona-card {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .id-modelo {
+    font-size: clamp(28px, 8vw, 46px);
+  }
+
+  .id-cliente {
+    font-size: clamp(18px, 5vw, 36px);
+  }
+
+  .id-pais-info {
+    font-size: clamp(16px, 4vw, 30px);
+  }
+
+  .detail-row {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .d-v {
+    font-size: clamp(14px, 3.5vw, 18px);
+  }
+
+  .left { border-right: none; border-bottom: 1px solid rgba(255,255,255,0.12); }
+  .h-center { display: none; } /* demasiado apertado */
+}
+</style>
 </head>
-
 <body>
-  <img src="https://static.wixstatic.com/media/a6967f_0c98d57376be4290aba002d8ba028a92~mv2.webp" alt="Logo" class="top-left-logo" id="main-logo" />
-  <img src="https://static.wixstatic.com/media/a6967f_806fe8fab41d42888a69ac911bb0a451~mv2.png" alt="Second Logo" class="top-right-logo" />
-  
-  <!-- Network Status Indicator -->
-  <div id="network-status-container">
-    <img id="status-icon-online" class="status-icon" src="https://static.wixstatic.com/media/a6967f_f5c3654000224207a9b1a990b32e1ec2~mv2.png" alt="Online" />
-    <img id="status-icon-offline" class="status-icon" src="https://static.wixstatic.com/media/a6967f_579e5220a23f42ad883c5df1380b1bff~mv2.png" alt="Offline" style="display: none;" />
-  </div>
 
-  <div class="destination-card">
-    <div class="destination-title" id="destination-title">Loading...</div>
-  </div>
+<div class="top-accent"></div>
+<div class="bg-grid"></div>
+<div class="bg-glow-left"></div>
+<div class="bg-glow-right"></div>
 
-  <div class="grid-container">
-    <div class="grid-item" id="grid-item-1">
-      <div class="card-title">CUBA</div>
-      <div class="card-chart"></div>
-    </div>
-    <div class="grid-item" id="grid-item-2">
-      <div class="card-title">INTERIOR</div>
-      <div class="card-chart"></div>
-    </div>
-    <div class="grid-item" id="grid-item-3">
-      <div class="card-title">TESTES</div>
-      <div class="card-chart"></div>
-    </div>
-    <div class="grid-item" id="grid-item-4">
-      <div class="card-title">ENVOLVENTES</div>
-      <div class="card-chart"></div>
-    </div>
-    <div class="grid-item" id="grid-item-5">
-      <div class="card-title">ESTRUTURA</div>
-      <div class="card-chart"></div>
-    </div>
-    <div class="grid-item" id="grid-item-6">
-      <div class="card-title">ÁREA TÉCNICA</div>
-      <div class="card-chart"></div>
-    </div>
-    
-    <div class="grid-item" id="grid-item-9">
-      <div class="card-title">1</div>
-    </div>
-    
-    <!--<div class="grid-item" id="grid-item-11">
-      <video autoplay muted loop>
-        <source src="https://video.wixstatic.com/video/a6967f_862ecb30994e420bb2fa2baf947c1fa8/720p/mp4/file.mp4" type="video/mp4">
-      </video>https://static.wixstatic.com/media/a6967f_65315a0ac33347c393c0ac33b6846aaf~mv2.png
-      https://video.wixstatic.com/video/a6967f_862ecb30994e420bb2fa2baf947c1fa8/720p/mp4/file.mp4"
-    </div>-->
+<div class="shell">
 
-    <!--<div id="grid-item-11" style="border-radius:16px; overflow:hidden;">
-      <img src="https://static.wixstatic.com/media/a6967f_95adc546d37c48439468dc428cc46bf3~mv2.png" 
-          alt="Descrição da imagem"
-          style="width:100%; height:100%; object-fit:cover; display:block;">
-    </div>-->
-
-       <!--<div class="grid-item" id="grid-item-11">
-      <video autoplay muted loop>
-        <source src="https://video.wixstatic.com/video/a6967f_862ecb30994e420bb2fa2baf947c1fa8/720p/mp4/file.mp4" type="video/mp4">
-      </video>
-    </div>-->
-    
-
-
-    <!--<div id="grid-item-11" style="border-radius:16px; overflow:hidden;">
-      <video autoplay muted loop playsinline
-            style="width:100%; height:100%; object-fit:cover; display:block;">
-        <source src="https://video.wixstatic.com/video/a6967f_862ecb30994e420bb2fa2baf947c1fa8/720p/mp4/file.mp4" type="video/mp4">
-      </video>
-    </div>-->
-
-    <div id="grid-item-11" style="border-radius:16px; overflow:hidden;">
-      <img src="https://static.wixstatic.com/media/a6967f_95adc546d37c48439468dc428cc46bf3~mv2.png" 
-          alt="Status"
-          style="width:100%; height:100%; object-fit:cover; display:block;">
+  <!-- HEADER -->
+  <header>
+    <div class="h-logo">
+      <img src="https://res.cloudinary.com/djxxk3ipz/image/upload/v1776687956/somengil_logo_white_wzwrm0.png" alt="Somengil">
     </div>
 
-
-
-    
-    <div class="grid-item" id="grid-item-7">
-      <div class="card-title">PRIORIDADE ATIVA</div>
-      <div class="card-chart"></div>
+    <div class="h-center">
+      <span class="h-badge">Soldadura</span>
+      <div class="h-sep"></div>
+      <span class="h-badge">Posto 1</span>
     </div>
-    
-    <div class="grid-item" id="grid-item-8">
-      <div class="card-chart"></div>
-    </div>
-    
-    <div class="bottom-section">
-      <div class="grid-item info-panel-card-2">
-        <div class="card-title">PLANEAMENTO</div>
-        <div class="info-panel-content-2"></div>
-      </div>
-      <div class="grid-item info-panel-card-1">
-        <div class="card-title"></div>
-        <div class="info-panel-content-1"></div>
-      </div>
-      <div class="grid-item info-panel-card-5">
-        <div class="card-title">Log Operacional</div>
-        <div class="info-panel-content-5" style="width: 100%; height: 100%; padding: 8px; box-sizing: border-box; overflow: hidden; font-size: 12px; color: white; text-align: left; display: grid; grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(3, minmax(0, 1fr)); grid-auto-rows: minmax(0, 1fr); gap: 12px; row-gap: 12px; column-gap: 12px; align-items: stretch;"></div>
-      </div>
-      <div class="grid-item info-panel-card-3">
-        <div class="card-title">GOAL</div>
-        <div class="goal-chart-container">
-          <svg class="goal-chart" viewBox="0 0 200 200" preserveAspectRatio="xMidYMid meet">
-            <circle cx="100" cy="100" r="80" fill="none" stroke="rgba(90,108,125,0.3)" stroke-width="20"/>
-            <circle cx="100" cy="100" r="60" fill="none" stroke="rgba(90,108,125,0.3)" stroke-width="15"/>
-            <circle cx="100" cy="100" r="42" fill="none" stroke="rgba(90,108,125,0.3)" stroke-width="8"/>
-            
-                <circle cx="100" cy="100" r="80" fill="none" stroke="#007bff" stroke-width="20" 
-                  stroke-dasharray="188 189" stroke-dashoffset="0" 
-                  stroke-linecap="round" transform="rotate(-90 100 100)"/>
 
-                <circle cx="100" cy="100" r="60" fill="none" stroke="#00a2e8" stroke-width="15" 
-                  stroke-dasharray="113 170" stroke-dashoffset="0" 
-                  stroke-linecap="round" transform="rotate(-90 100 100)"/>
+    <span class="h-time" id="htime">—</span>
+  </header>
 
-                <circle cx="100" cy="100" r="42" fill="none" stroke="#80a5dc" stroke-width="8" 
-                  stroke-dasharray="60 138" stroke-dashoffset="0" 
-                  stroke-linecap="round" transform="rotate(-90 100 100)"/>
-          </svg>
+  <!-- MAIN -->
+  <main>
+
+    <!-- LEFT -->
+    <div class="left">
+
+      <!-- HERO -->
+      <div class="hero">
+        <div class="hero-evolucao" style="align-items:center;justify-content:center;padding:0;overflow:visible;position:relative;" id="globeContainer">
+          <!-- Three.js globe renders here -->
+        </div>
+
+        <div class="hero-id">
+          <div class="id-modelo-label">País</div>
+          <div class="id-pais">
+            <span class="id-flag"></span>
+            <span class="id-pais-info">- · -</span>
+          </div>
+
+          <div class="id-cliente-label" style="margin-top:clamp(10px,2vh,20px);">Modelo / Equipamento</div>
+          <div class="id-modelo">MWS715 SDS EXD DRD</div>
+          <div class="id-lote">Lote &nbsp;·&nbsp; 26L_1</div>
         </div>
       </div>
-      <div class="grid-item info-panel-card-4">
-        <div class="info-panel-image-container">
-          <img id="status-indicator" src="" alt="Status" class="info-panel-image" />
+
+      <div class="divider-h"></div>
+
+      <!-- ZONAS -->
+      <div class="zonas-panel">
+        <div class="zonas-title">Progresso por Zona</div>
+        <div class="zonas-grid" id="zonasGrid"></div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT -->
+    <div class="right">
+
+      <!-- EVOLUÇÃO -->
+      <div class="globe-section" style="flex-direction:column;gap:clamp(6px,1vh,10px);position:relative;">
+        <div class="h-priority h-priority-left" id="prioridadeAtiva">
+          <span class="h-priority-label">Prioridade Ativa</span>
+          <span class="h-priority-value" id="prioridadeAtivaValue">—</span>
+        </div>
+        <div style="font-size:clamp(14px,1.8vh,20px);font-weight:700;letter-spacing:5px;text-transform:uppercase;color:rgba(255,255,255,0.75);">Evolução Global</div>
+        <div id="evNum" style="font-family:'Bebas Neue',sans-serif;font-size:clamp(140px,22vh,340px);line-height:.85;letter-spacing:-2px;">46%</div>
+        <div id="statusLabel" style="font-size:clamp(15px,2vh,22px);letter-spacing:4px;color:rgba(255,255,255,0.75);text-transform:uppercase;">Em Curso · ON</div>
+      </div>
+
+      <!-- PRAZO -->
+      <div class="prazo-section">
+        <div class="prazo-top">
+          <span class="prazo-label">Prazo</span>
+          <span class="prazo-folga" id="folgaSpan">—</span>
+        </div>
+        <div class="prazo-numbers">
+          <div class="prazo-used" id="prazoUsed">6</div>
+          <div class="prazo-div">/</div>
+          <div class="prazo-total">8</div>
+          <div class="prazo-unit">dias</div>
+        </div>
+        <div class="prazo-track">
+          <div class="prazo-fill-bar" id="prazoBar"></div>
         </div>
       </div>
+
+      <!-- DETALHES -->
+      <div class="details-section">
+        <div class="detail-row">
+          <span class="d-k">Início</span>
+          <span class="d-v">14 / 04 / 2026</span>
+        </div>
+        <div class="detail-row">
+          <span class="d-k">Previsto</span>
+          <span class="d-v">22 / 04 / 2026</span>
+        </div>
+      </div>
+
     </div>
-    
-    <!-- Progress bars criadas dinamicamente baseadas no número de slots -->
-    <div class="progress-bar-container"></div>
 
-  </div> <div class="app-wrapper">
-    <ul class="markers"></ul>
-  </div>
+  </main>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/106/three.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/stats.js/r16/Stats.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.6/dat.gui.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/17.4.0/Tween.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/3.3.2/fabric.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/chroma-js/2.0.4/chroma.min.js"></script>
-  <script src="libs/THREE.MeshLine.js"></script>
-  <script src="https://d3js.org/d3-array.v1.min.js"></script>
-  <script src="https://d3js.org/d3-geo.v1.min.js"></script>
-  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <!-- FOOTER -->
+  <footer>
+    <div class="f-left">
+      <div class="f-dot"></div>
+      <span class="f-status">Em Curso</span>
+      <span class="f-op-divider" style="width:1px;height:20px;background:rgba(255,255,255,0.1);margin:0 8px;flex-shrink:0;display:none;"></span>
+      <span class="f-op-label" style="display:none;">Operador</span>
+      <span class="f-op" style="display:none;">Richard · Diogo</span>
+    </div>
+    <div class="f-right">
+      <div class="f-date" id="fdate">—</div>
+    </div>
+  </footer>
 
-  <script src="libs/orbit-controls.js"></script>
-  <script src="libs/trackball-controls.js"></script>
-  <script src="libs/perlin-noise.js"></script>
+</div>
 
-  <script src="assets/data/processing.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const SHEET_CONFIG_DEFAULT = {
+  id: '1GQUB52a2gKR429bjqJrNkbP5rjR7Z_4v85z9M7_Cr8Y',
+  tab: 'PM1',
+  keyHeader: null,
+  keyValue: null,
+  targetHeader: 'EVOLUÇÃO',
+  targetColumn: 'Y',
+};
 
-  <script src="scripts/config.js?v=20251125"></script>
-  <script src="scripts/app.js?v=20251125"></script>
-  <script src="scripts/shaders.js?v=20251125"></script>
-  <script src="scripts/charts.js?v=20251125"></script>
-  
-  <!-- Google Sheets data loader -->
-  <script src="assets/data/googleSheets.js"></script>
-  
-  <script src="scripts/index.js?v=20251125"></script>
+// Cache system to avoid multiple fetches
+let sheetCache = {};
+let sheetCachePromises = {};
 
-  <script src="assets/data/countries.js"></script>
-  <script src="assets/data/connections.js"></script>
-  <script src="assets/data/grid.js"></script>
+function getCacheKey(config) {
+  const cfg = Object.assign({}, SHEET_CONFIG_DEFAULT, config);
+  return `${cfg.id}|${cfg.tab}`;
+}
 
-  <script src="scripts/globe.js?v=20251125"></script>
-  <script src="scripts/points.js?v=20251125"></script>
-  <script src="scripts/marker.js?v=20251125"></script>
-  <script src="scripts/markers.js?v=20251125"></script>
-  <script src="scripts/lines.js?v=20251125"></script>
-  <script src="scripts/dots.js?v=20251125"></script>
-  <script src="scripts/camera.js?v=20251125"></script>
+function getSheetEndpoint(config) {
+  const sheetId = encodeURIComponent(config.id);
+  const sheetTab = encodeURIComponent(config.tab);
+  return `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=${sheetTab}&headers=1`;
+}
 
-  <script src="scripts/utils.js?v=20251125"></script>
-  
-  <!-- Network Status Monitor -->
-  <script src="scripts/network-status.js?v=20251125"></script>
+function parseGvizResponse(text) {
+  const match = text.match(/google\.visualization\.Query\.setResponse\((.*)\);?$/s);
+  if (!match) {
+    throw new Error('Invalid Google Sheets response format');
+  }
+  return JSON.parse(match[1]);
+}
 
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      initializeBottomSectionAutoFont();
+function normalizeString(value) {
+  return String(value || '').trim().normalize('NFC').toLowerCase();
+}
 
-      function initializeBottomSectionAutoFont() {
-        const bottomSection = document.querySelector('.bottom-section');
-        if (!bottomSection) return;
+function columnLetterToIndex(letter) {
+  if (!letter) return -1;
+  const normalized = String(letter).trim().toUpperCase();
+  let index = 0;
+  for (let i = 0; i < normalized.length; i += 1) {
+    const charCode = normalized.charCodeAt(i);
+    if (charCode < 65 || charCode > 90) {
+      return -1;
+    }
+    index = index * 26 + (charCode - 65 + 1);
+  }
+  return index - 1;
+}
 
-        const MIN_FONT_SIZE_PX = 7;
-        const selectors = [
-          '.card-title',
-          '.info-line',
-          '.buffer-item',
-          '.info-panel-content-5 > div'
-        ];
+function findSheetCell(table, headerLabel, fallbackColumn) {
+  if (!table || !Array.isArray(table.cols)) {
+    return -1;
+  }
 
-        const getElementsToFit = () => {
-          return Array.from(bottomSection.querySelectorAll(selectors.join(','))).filter((el) => {
-            return el.textContent && el.textContent.trim().length > 0;
-          });
-        };
+  // Prioritize column letter if provided
+  if (fallbackColumn) {
+    const fallbackIndex = columnLetterToIndex(fallbackColumn);
+    if (fallbackIndex >= 0 && fallbackIndex < table.cols.length) {
+      return fallbackIndex;
+    }
+  }
 
-        const fitElementText = (element) => {
-          const computedFontSize = parseFloat(window.getComputedStyle(element).fontSize);
-          const baseFontSize = parseFloat(element.dataset.baseFontSize || computedFontSize);
-          if (!element.dataset.baseFontSize) {
-            element.dataset.baseFontSize = String(baseFontSize);
-          }
+  // Fall back to header matching
+  if (headerLabel) {
+    const label = normalizeString(headerLabel);
+    return table.cols.findIndex(col => normalizeString(col.label || col.id || '') === label);
+  }
 
-          let currentFontSize = baseFontSize;
-          element.style.fontSize = `${currentFontSize}px`;
-          element.style.whiteSpace = 'normal';
-          element.style.overflowWrap = 'anywhere';
-          element.style.wordBreak = 'break-word';
+  return -1;
+}
 
-          while (
-            (element.scrollWidth > element.clientWidth || element.scrollHeight > element.clientHeight) &&
-            currentFontSize > MIN_FONT_SIZE_PX
-          ) {
-            currentFontSize -= 0.5;
-            element.style.fontSize = `${currentFontSize}px`;
-          }
-        };
+function getValueFromRow(row, index) {
+  if (!row || !Array.isArray(row.c) || index < 0) {
+    return null;
+  }
+  const cell = row.c[index];
+  if (!cell) {
+    return null;
+  }
+  return cell.v != null ? cell.v : (cell.f != null ? cell.f : null);
+}
 
-        let rafId = null;
-        const fitAllText = () => {
-          if (rafId) cancelAnimationFrame(rafId);
-          rafId = requestAnimationFrame(() => {
-            getElementsToFit().forEach(fitElementText);
-            rafId = null;
-          });
-        };
-
-        const observer = new MutationObserver(fitAllText);
-        observer.observe(bottomSection, {
-          childList: true,
-          subtree: true,
-          characterData: true
-        });
-
-        window.addEventListener('resize', fitAllText);
-        fitAllText();
+function findRowByKey(table, keyHeader, keyValue) {
+  if (!Array.isArray(table.rows) || table.rows.length === 0) {
+    return null;
+  }
+  if (keyHeader && keyValue) {
+    const keyIndex = findSheetCell(table, keyHeader);
+    if (keyIndex >= 0) {
+      const found = table.rows.find(row => {
+        const cellValue = getValueFromRow(row, keyIndex);
+        return normalizeString(cellValue) === normalizeString(keyValue);
+      });
+      if (found) {
+        return found;
       }
-    });
-  </script>
+    }
+  }
+  return table.rows[0] || null;
+}
 
+function parseSheetPercentage(value) {
+  if (value == null) {
+    return null;
+  }
+
+  if (typeof value === 'number') {
+    const pct = Math.abs(value) <= 1 ? value * 100 : value;
+    return Math.round(pct);
+  }
+
+  const str = String(value).trim();
+  const percentMatch = str.match(/^(-?\d+(?:[\.,]\d+)?)\s*%$/);
+  if (percentMatch) {
+    return Math.round(Number(percentMatch[1].replace(',', '.')));
+  }
+
+  const numericMatch = str.replace(/\s+/g, '').replace(',', '.').match(/(-?\d+(?:\.\d+)?)/);
+  if (!numericMatch) {
+    return null;
+  }
+  const numeric = Number(numericMatch[1]);
+  const pct = numeric <= 1 ? numeric * 100 : numeric;
+  return Math.round(pct);
+}
+
+function parseSheetDate(value) {
+  if (value == null) {
+    return null;
+  }
+
+  // Handle Google Sheets date format like "Date(2026,3,14)"
+  const dateMatch = String(value).match(/Date\((\d+),(\d+),(\d+)\)/);
+  if (dateMatch) {
+    const year = parseInt(dateMatch[1]);
+    const month = parseInt(dateMatch[2]); // 0-based in JS Date
+    const day = parseInt(dateMatch[3]);
+    const date = new Date(year, month, day);
+    return date;
+  }
+
+  // Try to parse as regular date string
+  const date = new Date(String(value));
+  if (!isNaN(date.getTime())) {
+    return date;
+  }
+
+  return null;
+}
+
+function formatSheetDate(value) {
+  const date = parseSheetDate(value);
+  if (!date) {
+    return String(value);
+  }
+  return date.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+function getDaysDiff(dateValue1, dateValue2) {
+  const date1 = parseSheetDate(dateValue1);
+  const date2 = parseSheetDate(dateValue2);
+  
+  if (!date1 || !date2) {
+    return null;
+  }
+
+  // Reset time to midnight for accurate day difference
+  date1.setHours(0, 0, 0, 0);
+  date2.setHours(0, 0, 0, 0);
+
+  return Math.floor((date2 - date1) / (1000 * 60 * 60 * 24));
+}
+
+async function fetchSheetTable(config) {
+  const endpoint = getSheetEndpoint(config);
+  const response = await fetch(endpoint, { cache: 'no-cache' });
+  if (!response.ok) {
+    throw new Error(`Sheet fetch failed: ${response.status} ${response.statusText}`);
+  }
+  const text = await response.text();
+  const json = parseGvizResponse(text);
+  if (!json || !json.table) {
+    throw new Error('Sheet response did not contain table data');
+  }
+  return json.table;
+}
+
+function buildRowLookup(table, row) {
+  const valuesByHeader = {};
+  const valuesByColumn = {};
+
+  if (!row || !Array.isArray(table.cols)) {
+    return { valuesByHeader, valuesByColumn };
+  }
+
+  table.cols.forEach((col, index) => {
+    const value = getValueFromRow(row, index);
+    valuesByColumn[index] = value;
+
+    const normalizedLabel = normalizeString(col.label || col.id || `col${index}`);
+    valuesByHeader[normalizedLabel] = value;
+  });
+
+  return { valuesByHeader, valuesByColumn };
+}
+
+async function loadSheetDataCached(config = {}, options = {}) {
+  const cfg = Object.assign({}, SHEET_CONFIG_DEFAULT, config);
+  const cacheKey = getCacheKey(cfg);
+  const forceReload = options.forceReload === true;
+
+  if (!forceReload && sheetCache[cacheKey]) {
+    return sheetCache[cacheKey];
+  }
+
+  if (!forceReload && sheetCachePromises[cacheKey]) {
+    return await sheetCachePromises[cacheKey];
+  }
+
+  const promise = (async () => {
+    const table = await fetchSheetTable(cfg);
+    const row = findRowByKey(table, cfg.keyHeader, cfg.keyValue);
+    if (!row) {
+      throw new Error('No data row found in sheet');
+    }
+
+    const lookup = buildRowLookup(table, row);
+    const result = { table, row, valuesByHeader: lookup.valuesByHeader, valuesByColumn: lookup.valuesByColumn };
+
+    sheetCache[cacheKey] = result;
+    delete sheetCachePromises[cacheKey];
+    return result;
+  })();
+
+  sheetCachePromises[cacheKey] = promise;
+  try {
+    return await promise;
+  } catch (error) {
+    delete sheetCachePromises[cacheKey];
+    throw error;
+  }
+}
+
+async function loadSheetRow(config = {}) {
+  const cached = await loadSheetDataCached(config);
+  return cached;
+}
+
+function getSheetRowValue(rowData, targetHeader, targetColumn) {
+  if (!rowData) {
+    return null;
+  }
+
+  if (targetHeader) {
+    const normalizedHeader = normalizeString(targetHeader);
+    if (Object.prototype.hasOwnProperty.call(rowData.valuesByHeader, normalizedHeader)) {
+      return rowData.valuesByHeader[normalizedHeader];
+    }
+  }
+
+  if (targetColumn) {
+    const index = columnLetterToIndex(targetColumn);
+    if (index >= 0) {
+      return rowData.valuesByColumn[index];
+    }
+  }
+
+  return null;
+}
+
+async function loadSheetValue(config = {}) {
+  const cfg = Object.assign({}, SHEET_CONFIG_DEFAULT, config);
+  const cached = await loadSheetDataCached(cfg);
+
+  return getSheetRowValue(cached, cfg.targetHeader, cfg.targetColumn);
+}
+
+function rowValuesSnapshot(rowData) {
+  if (!rowData || !rowData.valuesByHeader) {
+    return '';
+  }
+  const entries = Object.entries(rowData.valuesByHeader).sort(([a], [b]) => a.localeCompare(b));
+  return JSON.stringify(entries);
+}
+
+function watchSheetRow(config = {}, onChange, intervalMs = 20000) {
+  let lastSnapshot = null;
+  let stopped = false;
+
+  async function check() {
+    if (stopped) return;
+    try {
+      const cached = await loadSheetDataCached(config, { forceReload: true });
+      const snapshot = rowValuesSnapshot(cached);
+      if (snapshot !== lastSnapshot) {
+        lastSnapshot = snapshot;
+        onChange(cached);
+      }
+    } catch (error) {
+      console.warn('Sheet watch error:', error);
+    }
+  }
+
+  check();
+  const intervalId = setInterval(check, intervalMs);
+  return () => {
+    stopped = true;
+    clearInterval(intervalId);
+  };
+}
+
+/**
+ * Calcula dias úteis (segunda a sexta) entre duas datas em Portugal
+ * @param {Date|String|Number} startDate - Data inicial
+ * @param {Date|String|Number} endDate - Data final
+ * @param {Boolean} includeStartDay - Se inclui o primeiro dia (padrão: true)
+ * @param {Number} year - Ano para determinar feriados (padrão: ano da startDate)
+ * @returns {Number} Número de dias úteis
+ */
+function getWorkDaysCount(startDate, endDate, includeStartDay = true, year = null) {
+  const start = parseSheetDate(startDate);
+  const end = parseSheetDate(endDate);
+  
+  if (!start || !end) {
+    return null;
+  }
+
+  // Feriados nacionais em Portugal (formato: MM-DD)
+  const ptHolidays = [
+    '01-01', // Ano Novo
+    '04-25', // Dia da Liberdade
+    '05-01', // Dia do Trabalho
+    '06-10', // Dia de Portugal
+    '08-15', // Assunção
+    '10-05', // Proclamação da República
+    '11-01', // Dia de Todos os Santos
+    '12-01', // Restauração da Independência
+    '12-25', // Natal
+  ];
+
+  // Feriados móveis para 2026
+  const mobileHolidays2026 = [
+    '02-17', // Terça de Carnaval
+    '04-17', // Sexta-feira Santa
+  ];
+
+  const year4Start = start.getFullYear();
+  if (year === year4Start) {
+    ptHolidays.push(...mobileHolidays2026);
+  }
+
+  const isHoliday = (date) => {
+    const monthDay = String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0');
+    return ptHolidays.includes(monthDay);
+  };
+
+  const isWorkDay = (date) => {
+    const dayOfWeek = date.getDay();
+    // 0 = domingo, 1 = segunda, ..., 5 = sexta, 6 = sábado
+    return dayOfWeek >= 1 && dayOfWeek <= 5 && !isHoliday(date);
+  };
+
+  let count = 0;
+  const current = new Date(start);
+  current.setHours(0, 0, 0, 0);
+  end.setHours(0, 0, 0, 0);
+
+  // Ajestar se não inclui o dia de início
+  if (!includeStartDay) {
+    current.setDate(current.getDate() + 1);
+  }
+
+  while (current <= end) {
+    if (isWorkDay(current)) {
+      count++;
+    }
+    current.setDate(current.getDate() + 1);
+  }
+
+  return count;
+}
+
+/**
+ * Retorna informações de prazo com dias úteis
+ * @param {Date|String|Number} startDate - Data de início
+ * @param {Date|String|Number} dueDate - Data prevista
+ * @param {Date|String|Number} todayDate - Data atual (padrão: hoje)
+ * @returns {Object} { totalWorkDays, remainingWorkDays, percentage }
+ */
+function getDeadlineInfo(startDate, dueDate, todayDate = new Date()) {
+  const start = parseSheetDate(startDate);
+  const due = parseSheetDate(dueDate);
+  const today = parseSheetDate(todayDate);
+  
+  if (!start || !due || !today) {
+    return null;
+  }
+
+  const totalWorkDays = getWorkDaysCount(start, due, true, start.getFullYear());
+  const remainingWorkDays = getWorkDaysCount(today, due, false, today.getFullYear());
+  
+  return {
+    totalWorkDays,
+    remainingWorkDays,
+    daysElapsed: totalWorkDays - remainingWorkDays,
+    percentage: totalWorkDays > 0 ? Math.round(((totalWorkDays - remainingWorkDays) / totalWorkDays) * 100) : 0
+  };
+}
+
+/**
+ * Retorna o emoji da bandeira baseado no nome do país
+ * @param {String} countryName - Nome do país
+ * @returns {String} Emoji da bandeira ou 🇺🇳 se não encontrado
+ */
+function getCountryFlag(countryName) {
+  if (!countryName || typeof countryName !== 'string') {
+    return '🇺🇳'; // United Nations flag as fallback
+  }
+
+  const country = countryName.trim().toLowerCase();
+
+  // Mapeamento de países para códigos ISO de 2 letras
+  const countryMap = {
+    'portugal': 'PT',
+    'portuguesa': 'PT',
+    'espanha': 'ES',
+    'spain': 'ES',
+    'frança': 'FR',
+    'france': 'FR',
+    'itália': 'IT',
+    'italy': 'IT',
+    'alemanha': 'DE',
+    'germany': 'DE',
+    'reino unido': 'GB',
+    'united kingdom': 'GB',
+    'uk': 'GB',
+    'estados unidos': 'US',
+    'united states': 'US',
+    'usa': 'US',
+    'brasil': 'BR',
+    'brazil': 'BR',
+    'méxico': 'MX',
+    'mexico': 'MX',
+    'peru': 'PE',
+    'perú': 'PE',
+    'chile': 'CL',
+    'colômbia': 'CO',
+    'colombia': 'CO',
+    'argentina': 'AR',
+    'equador': 'EC',
+    'ecuador': 'EC',
+    'uruguai': 'UY',
+    'uruguay': 'UY',
+    'paraguai': 'PY',
+    'paraguay': 'PY',
+    'venezuela': 'VE',
+    'bolívia': 'BO',
+    'bolivia': 'BO',
+    'panamá': 'PA',
+    'panama': 'PA',
+    'costa rica': 'CR',
+    'costa-rica': 'CR',
+    'nicarágua': 'NI',
+    'nicaragua': 'NI',
+    'honduras': 'HN',
+    'el salvador': 'SV',
+    'elsalvador': 'SV',
+    'guatemala': 'GT',
+    'belize': 'BZ',
+    'andorra': 'AD',
+    'angola': 'AO',
+    'moçambique': 'MZ',
+    'mozambique': 'MZ',
+    'cabo verde': 'CV',
+    'caboverde': 'CV',
+    'guiné-bissau': 'GW',
+    'guine-bissau': 'GW',
+    'são tomé e príncipe': 'ST',
+    'sao tome e principe': 'ST',
+    'timor-leste': 'TL',
+    'timor leste': 'TL',
+    'macau': 'MO',
+    'macao': 'MO'
+  };
+
+  const countryCode = countryMap[country];
+  if (!countryCode) {
+    return '🇺🇳'; // Fallback
+  }
+
+  // Converter código ISO para emoji de bandeira
+  // A = 127462 (🇦), B = 127463 (🇧), etc.
+  const flag = countryCode
+    .toUpperCase()
+    .split('')
+    .map(char => String.fromCodePoint(127462 + char.charCodeAt(0) - 65))
+    .join('');
+
+  return flag;
+}
+
+/**
+ * Retorna as coordenadas geográficas (latitude, longitude) de um país
+ * @param {String} countryName - Nome do país
+ * @returns {Object} {lat, lon} ou coordenadas de Portugal como fallback
+ */
+function getCountryCoordinates(countryName) {
+  if (!countryName || typeof countryName !== 'string') {
+    return { lat: 38.7, lon: -9.1 }; // Portugal como fallback
+  }
+
+  const country = countryName.trim().toLowerCase();
+
+  // Mapeamento de países para coordenadas [latitude, longitude]
+  const coordinatesMap = {
+    'portugal': { lat: 38.7, lon: -9.1 },
+    'portuguesa': { lat: 38.7, lon: -9.1 },
+    'espanha': { lat: 40.4, lon: -3.7 },
+    'spain': { lat: 40.4, lon: -3.7 },
+    'frança': { lat: 48.9, lon: 2.4 },
+    'france': { lat: 48.9, lon: 2.4 },
+    'itália': { lat: 41.9, lon: 12.5 },
+    'italy': { lat: 41.9, lon: 12.5 },
+    'alemanha': { lat: 52.5, lon: 13.4 },
+    'germany': { lat: 52.5, lon: 13.4 },
+    'reino unido': { lat: 51.5, lon: -0.1 },
+    'united kingdom': { lat: 51.5, lon: -0.1 },
+    'uk': { lat: 51.5, lon: -0.1 },
+    'estados unidos': { lat: 38.9, lon: -77.0 },
+    'united states': { lat: 38.9, lon: -77.0 },
+    'usa': { lat: 38.9, lon: -77.0 },
+    'brasil': { lat: -15.8, lon: -47.9 },
+    'brazil': { lat: -15.8, lon: -47.9 },
+    'méxico': { lat: 19.4, lon: -99.1 },
+    'mexico': { lat: 19.4, lon: -99.1 },
+    'peru': { lat: -9.2, lon: -75.0 },
+    'perú': { lat: -9.2, lon: -75.0 },
+    'chile': { lat: -33.4, lon: -70.7 },
+    'colômbia': { lat: 4.7, lon: -74.1 },
+    'colombia': { lat: 4.7, lon: -74.1 },
+    'argentina': { lat: -34.6, lon: -58.4 },
+    'equador': { lat: -0.2, lon: -78.5 },
+    'ecuador': { lat: -0.2, lon: -78.5 },
+    'uruguai': { lat: -34.9, lon: -56.2 },
+    'uruguay': { lat: -34.9, lon: -56.2 },
+    'paraguai': { lat: -25.3, lon: -57.6 },
+    'paraguay': { lat: -25.3, lon: -57.6 },
+    'venezuela': { lat: 10.5, lon: -66.9 },
+    'bolívia': { lat: -16.5, lon: -68.1 },
+    'bolivia': { lat: -16.5, lon: -68.1 },
+    'panamá': { lat: 8.98, lon: -79.5 },
+    'panama': { lat: 8.98, lon: -79.5 },
+    'costa rica': { lat: 9.93, lon: -84.1 },
+    'costa-rica': { lat: 9.93, lon: -84.1 },
+    'nicarágua': { lat: 12.1, lon: -86.3 },
+    'nicaragua': { lat: 12.1, lon: -86.3 },
+    'honduras': { lat: 14.1, lon: -87.2 },
+    'el salvador': { lat: 13.7, lon: -89.2 },
+    'elsalvador': { lat: 13.7, lon: -89.2 },
+    'guatemala': { lat: 14.6, lon: -90.5 },
+    'belize': { lat: 17.3, lon: -88.8 },
+    'andorra': { lat: 42.5, lon: 1.5 },
+    'angola': { lat: -8.8, lon: 13.2 },
+    'moçambique': { lat: -25.9, lon: 32.6 },
+    'mozambique': { lat: -25.9, lon: 32.6 },
+    'cabo verde': { lat: 14.9, lon: -23.5 },
+    'caboverde': { lat: 14.9, lon: -23.5 },
+    'guiné-bissau': { lat: 11.9, lon: -15.6 },
+    'guine-bissau': { lat: 11.9, lon: -15.6 },
+    'são tomé e príncipe': { lat: 0.3, lon: 6.7 },
+    'sao tome e principe': { lat: 0.3, lon: 6.7 },
+    'timor-leste': { lat: -8.6, lon: 125.6 },
+    'timor leste': { lat: -8.6, lon: 125.6 },
+    'macau': { lat: 22.2, lon: 113.5 },
+    'macao': { lat: 22.2, lon: 113.5 }
+  };
+
+  return coordinatesMap[country] || { lat: 38.7, lon: -9.1 }; // Portugal como fallback
+}
+
+</script>
+<script>
+/* ── CORES ── */
+const ec = v => v >= 75 ? '#00ff87' : v >= 40 ? '#00d4ff' : '#ffaa00';
+const bc = v => v === 100 ? '#00ff87' : v > 0 ? '#00d4ff' : null;
+
+/* ── CONFIGURAÇÃO DE SHEET ── */
+const SHEET_POLL_INTERVAL = 20000;
+const SHEET_CONFIG = { id: '1GQUB52a2gKR429bjqJrNkbP5rjR7Z_4v85z9M7_Cr8Y', tab: 'PM1' };
+
+const FALLBACK_EV = 46;
+const evEl = document.getElementById('evNum');
+const modelEl = document.querySelector('.id-modelo');
+const MODEL_FALLBACK = modelEl ? modelEl.textContent.trim() : 'MWS715 SDS EXD DRD';
+const loteEl = document.querySelector('.id-lote');
+const LOTE_FALLBACK = loteEl ? loteEl.textContent.trim() : 'Lote · 26L_1';
+const paisInfoEl = document.querySelector('.id-pais-info');
+const PAIS_INFO_FALLBACK = paisInfoEl ? paisInfoEl.textContent.trim() : 'Peru · EN';
+const flagEl = document.querySelector('.id-flag');
+const paisContainerEl = document.querySelector('.id-pais');
+const operadorEl = document.querySelector('.f-op');
+const OPERADOR_FALLBACK = operadorEl ? operadorEl.textContent.trim() : 'Richard · Diogo';
+const dataInicioEl = document.querySelectorAll('.d-v')[0];
+const DATA_INICIO_FALLBACK = dataInicioEl ? dataInicioEl.textContent.trim() : '14 / 04 / 2026';
+const dataPrevistaEl = document.querySelectorAll('.d-v')[1];
+const DATA_PREVISTA_FALLBACK = dataPrevistaEl ? dataPrevistaEl.textContent.trim() : '22 / 04 / 2026';
+const folgaEl = document.getElementById('folgaSpan');
+const prazoUsedEl = document.getElementById('prazoUsed');
+const prazoBarEl = document.getElementById('prazoBar');
+const prazoTotalEl = document.querySelector('.prazo-total');
+const statusEl = document.getElementById('statusLabel');
+const zg = document.getElementById('zonasGrid');
+
+const ZONA_CONFIGS = [
+  { nome: 'Cuba', header: 'CUBA', column: 'AA' },
+  { nome: 'Estrutura', header: 'ESTRUTURA', column: 'AB' },
+  {
+    nome: 'Planeamento',
+    type: 'list',
+    tall: true,
+    listSource: {
+      tab: 'soldaduraEditávelMulti',
+      header: 'LOTE',
+      column: 'D',
+      limit: 5,
+    },
+  },
+  {
+    nome: 'Histórico',
+    type: 'list',
+    listSource: {
+      tab: 'PS1',
+      mode: 'row-headers',
+      startColumn: 'CO',
+      endColumn: 'DK',
+      ignoreLabels: ['%'],
+      hideHeader: true,
+      limit: 50,
+    },
+  },
+  { nome: 'Envolventes', header: 'ENVOLVENTES', column: 'AD' },
+  { nome: 'Interior', header: 'INTERIOR', column: 'AC' },
+  {
+    nome: 'Próxima Prioridade',
+    type: 'single',
+    singleSource: {
+      tab: 'PS1',
+      header: 'Próxima Prioridade',
+      column: 'CH',
+    },
+  },
+];
+
+// Cache simples para a lista de lotes — partilhado pelo refresh periódico
+const ZONA_LIST_CACHE = {};
+
+function updateEvolucao(value) {
+  const pct = Number.isFinite(value) ? value : FALLBACK_EV;
+  evEl.textContent = `${pct}%`;
+  evEl.style.color = ec(pct);
+  evEl.style.textShadow = `0 0 60px ${ec(pct)}40`;
+}
+
+function getFieldValue(rowData, header, column, fallback = null) {
+  const value = rowData ? getSheetRowValue(rowData, header, column) : null;
+  if (value == null || (typeof value === 'string' && value.trim() === '')) {
+    return fallback;
+  }
+  return value;
+}
+
+function renderText(el, value, fallback = '') {
+  if (!el) return;
+  el.textContent = value != null ? String(value) : fallback;
+}
+
+function renderLote(value) {
+  if (!loteEl) return;
+  loteEl.innerHTML = `Lote &nbsp;·&nbsp; ${String(value != null ? value : LOTE_FALLBACK)}`;
+}
+
+// Helper: escape básico para conteúdo dinâmico inserido via innerHTML
+function escapeHtml(str) {
+  return String(str == null ? '' : str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// Promises in-flight de fetch a separadores secundários, para de-dupe no mesmo tick.
+const SECONDARY_TAB_INFLIGHT = {};
+
+// Vai buscar a linha 2 (primeira linha de dados) de um separador e devolve os
+// campos pedidos como { [chave]: valor }. Cada campo é { header, column }.
+// Faz de-dupe se já existe um fetch em curso para o mesmo separador.
+async function fetchSecondaryRowFields(tab, fields) {
+  if (!SECONDARY_TAB_INFLIGHT[tab]) {
+    SECONDARY_TAB_INFLIGHT[tab] = fetchSheetTable({ id: SHEET_CONFIG_DEFAULT.id, tab })
+      .finally(() => { delete SECONDARY_TAB_INFLIGHT[tab]; });
+  }
+  const table = await SECONDARY_TAB_INFLIGHT[tab];
+  const out = {};
+  if (!table || !Array.isArray(table.rows) || !table.rows[0]) {
+    return out;
+  }
+  const firstRow = table.rows[0];
+  Object.keys(fields).forEach(key => {
+    const { header, column } = fields[key];
+    const idx = findSheetCell(table, header, column);
+    out[key] = idx >= 0 ? getValueFromRow(firstRow, idx) : null;
+  });
+  return out;
+}
+
+// Lê valores de várias colunas em várias linhas de um separador.
+// `columns` é um objecto { chave: { header, column } } a definir as colunas pretendidas.
+// `startRow`/`endRow` são números de linha 1-indexed da Sheet (linha 1 = cabeçalho).
+// Devolve um array de objectos, um por linha de dados, com as chaves pedidas.
+//
+// Nota técnica: o gviz com headers=1 desloca os índices — a linha 2 da Sheet
+// corresponde a rows[0], a linha 3 a rows[1], etc. Esta função abstrai isso.
+async function fetchSecondaryRowsRange(tab, columns, startRow, endRow) {
+  if (!SECONDARY_TAB_INFLIGHT[tab]) {
+    SECONDARY_TAB_INFLIGHT[tab] = fetchSheetTable({ id: SHEET_CONFIG_DEFAULT.id, tab })
+      .finally(() => { delete SECONDARY_TAB_INFLIGHT[tab]; });
+  }
+  const table = await SECONDARY_TAB_INFLIGHT[tab];
+  if (!table || !Array.isArray(table.rows)) return [];
+
+  // Resolver o índice de cada coluna uma vez
+  const resolved = {};
+  Object.keys(columns).forEach(key => {
+    const { header, column } = columns[key];
+    resolved[key] = findSheetCell(table, header, column);
+  });
+
+  // Linha N (1-indexed) da Sheet → rows[N-2] no gviz (porque rows[0] = linha 2)
+  const startIdx = Math.max(0, startRow - 2);
+  const endIdx = Math.min(table.rows.length - 1, endRow - 2);
+
+  const out = [];
+  for (let i = startIdx; i <= endIdx; i += 1) {
+    const row = table.rows[i];
+    if (!row) continue;
+    const obj = {};
+    Object.keys(resolved).forEach(key => {
+      const idx = resolved[key];
+      obj[key] = idx >= 0 ? getValueFromRow(row, idx) : null;
+    });
+    out.push(obj);
+  }
+  return out;
+}
+
+// Vai buscar valores de uma coluna do separador `tab` para alimentar um card-lista.
+//
+// Modo "column" (default): lê primeiras N linhas da coluna `column` (ou pelo `header`).
+// Modo "row-headers": lê os labels do cabeçalho (linha 1) das colunas entre
+// `startColumn` e `endColumn`, e devolve só aqueles cuja célula da linha 2
+// não está vazia. Útil para mostrar "que postos estão activos agora".
+async function fetchZonaListValues(source) {
+  const cfg = {
+    id: SHEET_CONFIG_DEFAULT.id,
+    tab: source.tab,
+  };
+  const table = await fetchSheetTable(cfg);
+
+  if (source.mode === 'row-headers') {
+    if (!table || !Array.isArray(table.cols) || !Array.isArray(table.rows) || !table.rows[0]) {
+      return [];
+    }
+    const startIdx = columnLetterToIndex(source.startColumn);
+    const endIdx = columnLetterToIndex(source.endColumn);
+    if (startIdx < 0 || endIdx < 0 || endIdx < startIdx) {
+      return [];
+    }
+    const ignore = new Set((source.ignoreLabels || []).map(s => String(s).trim()));
+    const firstRow = table.rows[0]; // linha 2 da Sheet (gviz com headers=1 desloca)
+    const limit = Math.max(1, source.limit || 50);
+    const values = [];
+    for (let i = startIdx; i <= endIdx && i < table.cols.length && values.length < limit; i += 1) {
+      const value = getValueFromRow(firstRow, i);
+      if (value == null || String(value).trim() === '') continue;
+
+      const col = table.cols[i] || {};
+      const rawLabel = col.label != null && String(col.label).trim() !== ''
+        ? String(col.label).trim()
+        : String(col.id || '').trim();
+      if (rawLabel === '' || ignore.has(rawLabel)) continue;
+
+      values.push(rawLabel);
+    }
+    return values;
+  }
+
+  // Modo default: percorre as primeiras linhas de uma única coluna
+  const colIndex = findSheetCell(table, source.header, source.column);
+  if (colIndex < 0 || !Array.isArray(table.rows)) {
+    return [];
+  }
+  const limit = Math.max(1, source.limit || 5);
+  const values = [];
+  for (let i = 0; i < table.rows.length && values.length < limit; i += 1) {
+    const v = getValueFromRow(table.rows[i], colIndex);
+    if (v != null && String(v).trim() !== '') {
+      values.push(String(v).trim());
+    }
+  }
+  return values;
+}
+
+function buildZonaPctCard(config, rowData) {
+  const raw = getFieldValue(rowData, config.header, config.column, 0);
+  const pct = parseSheetPercentage(raw) || 0;
+  const cls = pct === 100 ? 'done' : pct > 0 ? 'going' : 'empty';
+  const col = bc(pct);
+  const card = document.createElement('div');
+  card.className = `zona-card ${cls}${config.tall ? ' tall' : ''}`;
+  card.innerHTML = `
+    <div class="zona-card-label">${escapeHtml(config.nome)}</div>
+    <div class="zona-card-pct" style="color:${col || 'rgba(255,255,255,0.15)'}">${pct}%</div>
+    <div class="zona-card-bar">
+      <div class="zona-card-fill" style="width:${pct}%;background:${col || 'rgba(255,255,255,0.07)'}"></div>
+    </div>`;
+  return card;
+}
+
+function buildZonaListCard(config, items) {
+  const list = Array.isArray(items) ? items : [];
+  const cls = list.length > 0 ? 'going' : 'empty';
+  const card = document.createElement('div');
+  card.className = `zona-card list ${cls}${config.tall ? ' tall' : ''}`;
+
+  const itemsHtml = list.length
+    ? list.map(v => `<div class="zona-card-list-item">${escapeHtml(v)}</div>`).join('')
+    : '<div class="zona-card-list-empty">Sem dados</div>';
+
+  const src = config.listSource || {};
+  const headerLabel = src.headerLabel || src.header || 'LOTE';
+  const headerHtml = src.hideHeader
+    ? ''
+    : `<div class="zona-card-list-header">${escapeHtml(headerLabel)}</div>`;
+
+  card.innerHTML = `
+    <div class="zona-card-label">${escapeHtml(config.nome)}</div>
+    ${headerHtml}
+    <div class="zona-card-list-items">${itemsHtml}</div>`;
+  return card;
+}
+
+function buildZonaSingleCard(config, value) {
+  const txt = value != null && String(value).trim() !== '' ? String(value).trim() : null;
+  const cls = txt ? 'going' : 'empty';
+  const card = document.createElement('div');
+  card.className = `zona-card single ${cls}${config.tall ? ' tall' : ''}`;
+  card.innerHTML = `
+    <div class="zona-card-label">${escapeHtml(config.nome)}</div>
+    <div class="zona-card-single-value">${escapeHtml(txt || '—')}</div>`;
+  return card;
+}
+
+function renderZones(rowData) {
+  zg.innerHTML = '';
+  ZONA_CONFIGS.forEach(config => {
+    if (config.type === 'list') {
+      const src = config.listSource || {};
+      const cacheKey = src.mode === 'row-headers'
+        ? `list|${src.tab}|rowheaders|${src.startColumn}-${src.endColumn}`
+        : `list|${src.tab}|${src.column || src.header}`;
+      const cached = ZONA_LIST_CACHE[cacheKey];
+      const card = buildZonaListCard(config, cached);
+      zg.appendChild(card);
+
+      fetchZonaListValues(src)
+        .then(values => {
+          ZONA_LIST_CACHE[cacheKey] = values;
+          const fresh = buildZonaListCard(config, values);
+          card.replaceWith(fresh);
+        })
+        .catch(err => console.warn(`Falha a carregar lista para "${config.nome}":`, err));
+    } else if (config.type === 'single') {
+      const src = config.singleSource || {};
+      const cacheKey = `single|${src.tab}|${src.column || src.header}`;
+      const cached = ZONA_LIST_CACHE[cacheKey];
+      const card = buildZonaSingleCard(config, cached);
+      zg.appendChild(card);
+
+      fetchSecondaryRowFields(src.tab, {
+        v: { header: src.header, column: src.column },
+      }).then(({ v }) => {
+        ZONA_LIST_CACHE[cacheKey] = v;
+        const fresh = buildZonaSingleCard(config, v);
+        card.replaceWith(fresh);
+      }).catch(err => console.warn(`Falha a carregar valor para "${config.nome}":`, err));
+    } else {
+      zg.appendChild(buildZonaPctCard(config, rowData));
+    }
+  });
+}
+
+function updateDeadline(startValue, dueValue) {
+  // Helper: limpa o bloco de prazo para o estado "sem dados"
+  const clearDeadline = () => {
+    const dash = '-';
+    if (prazoUsedEl) {
+      prazoUsedEl.textContent = dash;
+      prazoUsedEl.style.color = 'rgba(255,255,255,0.4)';
+      prazoUsedEl.style.textShadow = 'none';
+    }
+    if (prazoTotalEl) {
+      prazoTotalEl.textContent = dash;
+    }
+    const unitEl = document.querySelector('.prazo-unit');
+    if (unitEl) {
+      unitEl.textContent = 'DIAS';
+    }
+    if (prazoBarEl) {
+      prazoBarEl.style.width = '0%';
+      prazoBarEl.style.background = 'rgba(255,255,255,0.15)';
+    }
+    if (folgaEl) {
+      folgaEl.textContent = '—';
+      folgaEl.style.color = 'rgba(255,255,255,0.4)';
+    }
+  };
+
+  if (startValue == null || String(startValue).trim() === '' ||
+      dueValue == null || String(dueValue).trim() === '') {
+    clearDeadline();
+    return;
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const total = getWorkDaysCount(startValue, dueValue, true);
+  const used = getWorkDaysCount(startValue, today, true);
+  const remaining = getWorkDaysCount(today, dueValue, false);
+
+  if (total == null || used == null || remaining == null) {
+    clearDeadline();
+    return;
+  }
+
+  const ratio = total > 0 ? Math.min(1, used / total) : 0;
+  const pc = ratio >= .9 ? '#ff3b3b' : ratio >= .7 ? '#ffaa00' : '#00ff87';
+
+  if (prazoUsedEl) {
+    prazoUsedEl.textContent = used;
+    prazoUsedEl.style.color = pc;
+    prazoUsedEl.style.textShadow = `0 0 40px ${pc}50`;
+  }
+  if (prazoBarEl) {
+    prazoBarEl.style.width = `${ratio * 100}%`;
+    prazoBarEl.style.background = pc;
+  }
+  if (folgaEl) {
+    folgaEl.textContent = `${remaining} dias restantes`;
+    folgaEl.style.color = remaining <= 1 ? '#ff3b3b' : remaining <= 3 ? '#ffaa00' : '#00ff87';
+  }
+  if (prazoTotalEl) {
+    prazoTotalEl.textContent = total;
+  }
+  const unitEl = document.querySelector('.prazo-unit');
+  if (unitEl) {
+    unitEl.textContent = 'dias';
+  }
+}
+
+function updateStatus(rowData) {
+  const statusValue = getFieldValue(rowData, null, 'A', null);
+  if (!statusEl) return;
+  const statusText = statusValue && String(statusValue).trim().length > 0 ? 'Em Curso · ON' : 'standby';
+  statusEl.textContent = statusText.toUpperCase();
+}
+
+function renderSheetData(sheetRow) {
+  if (!sheetRow) return;
+
+  const evRaw = getFieldValue(sheetRow, 'EVOLUÇÃO', 'Y', FALLBACK_EV);
+  updateEvolucao(parseSheetPercentage(evRaw));
+
+  // Modelo e Lote vêm do PS1!D (mais abaixo, no fetch ao PS1)
+
+  // Helper: aplicar estado "vazio" (volta ao layout single com placeholder)
+  function setPaisEmpty() {
+    if (!paisContainerEl) return;
+    paisContainerEl.classList.remove('is-grid');
+    paisContainerEl.innerHTML = `
+      <span class="id-flag"></span>
+      <span class="id-pais-info">${PAIS_PLACEHOLDER}</span>`;
+  }
+
+  // Helper: aplicar estado "single" (1 par país/idioma)
+  function setPaisSingle(pais, idioma) {
+    if (!paisContainerEl) return;
+    paisContainerEl.classList.remove('is-grid');
+    const flag = getCountryFlag(pais) || '';
+    const idiomaTxt = idioma ? idioma.toUpperCase() : '—';
+    paisContainerEl.innerHTML = `
+      <span class="id-flag">${escapeHtml(flag)}</span>
+      <span class="id-pais-info">${escapeHtml(pais.toUpperCase())} · ${escapeHtml(idiomaTxt)}</span>`;
+  }
+
+  // Helper: aplicar estado "grid 2x2"
+  function setPaisGrid(pares) {
+    if (!paisContainerEl) return;
+    paisContainerEl.classList.add('is-grid');
+    paisContainerEl.innerHTML = pares.slice(0, 4).map(p => {
+      const flag = getCountryFlag(p.pais) || '';
+      const idiomaTxt = p.idioma ? p.idioma.toUpperCase() : '—';
+      return `
+        <div class="id-pais-cell">
+          <span class="id-flag">${escapeHtml(flag)}</span>
+          <span class="id-pais-info">${escapeHtml(p.pais.toUpperCase())} · ${escapeHtml(idiomaTxt)}</span>
+        </div>`;
+    }).join('');
+  }
+
+  // País + Idioma vêm de montagemEditável!L2:L6 e M2:M6 (várias entradas)
+  const PAIS_PLACEHOLDER = '- · -';
+  fetchSecondaryRowsRange('montagemEditável', {
+    pais: { header: 'PAÍS', column: 'L' },
+    idioma: { header: 'IDIOMA', column: 'M' },
+  }, 2, 6).then(rows => {
+    const valid = rows
+      .map(r => ({
+        pais: r.pais != null ? String(r.pais).trim() : '',
+        idioma: r.idioma != null ? String(r.idioma).trim() : '',
+      }))
+      .filter(r => r.pais !== '');
+
+    if (valid.length === 0) {
+      setPaisEmpty();
+      return;
+    }
+
+    // Ordenação alfabética pelo nome do país (locale PT, insensível a acentos/maiúsculas)
+    valid.sort((a, b) => a.pais.localeCompare(b.pais, 'pt', { sensitivity: 'base' }));
+
+    if (valid.length === 1) {
+      setPaisSingle(valid[0].pais, valid[0].idioma);
+    } else {
+      setPaisGrid(valid);
+    }
+
+    // O globo só aceita um país de cada vez — usa o primeiro (alfabeticamente)
+    if (typeof updateGlobeDestination === 'function') {
+      updateGlobeDestination(valid[0].pais);
+    }
+  }).catch(err => {
+    console.warn('Falha a carregar países do montagemEditável:', err);
+    setPaisEmpty();
+  });
+
+  renderText(operadorEl, getFieldValue(sheetRow, 'OPERADOR', 'AH', OPERADOR_FALLBACK), OPERADOR_FALLBACK);
+
+  // Datas + Modelo/Lote vindos do PS1
+  const DATE_PLACEHOLDER = '-- / -- / ----';
+  const MODEL_PLACEHOLDER = '—';
+
+  // Atualiza o badge "Prioridade Ativa" no canto superior esquerdo
+  const ativaBox = document.getElementById('prioridadeAtiva');
+  const ativaValueEl = document.getElementById('prioridadeAtivaValue');
+  function setPrioridadeAtiva(value) {
+    const txt = value != null && String(value).trim() !== '' ? String(value).trim() : null;
+    if (ativaValueEl) ativaValueEl.textContent = txt || '—';
+    if (ativaBox) ativaBox.classList.toggle('is-empty', !txt);
+  }
+
+  // Separa "MWS500 SDS - 87L" → { modelo: "MWS500 SDS", lote: "87L" }.
+  // Se não terminar em "<2 dígitos>L", devolve { modelo: <string toda>, lote: null }.
+  function parseModeloLote(raw) {
+    const text = raw == null ? '' : String(raw).trim();
+    if (text === '') return { modelo: '', lote: null };
+    // Padrão: começa pela parte do modelo, segue " - " (espaços flexíveis), 2 dígitos + L no fim
+    const m = text.match(/^(.*?)\s*-\s*(\d{2}L)$/);
+    if (m) {
+      return { modelo: m[1].trim(), lote: m[2] };
+    }
+    return { modelo: text, lote: null };
+  }
+
+  fetchSecondaryRowFields('PS1', {
+    inicio: { header: 'INÍCIO SOLDADURA / ACABAMENTO', column: 'J' },
+    previsto: { header: 'DATA PRETENDIDA', column: 'F' },
+    modeloLote: { header: 'D', column: 'D' },
+    prioridadeAtiva: { header: 'Posto 1', column: 'CI' },
+  }).then(({ inicio, previsto, modeloLote, prioridadeAtiva }) => {
+    const inicioFmt = inicio != null && String(inicio).trim() !== ''
+      ? formatSheetDate(inicio) || DATE_PLACEHOLDER
+      : DATE_PLACEHOLDER;
+    const previstoFmt = previsto != null && String(previsto).trim() !== ''
+      ? formatSheetDate(previsto) || DATE_PLACEHOLDER
+      : DATE_PLACEHOLDER;
+    renderText(dataInicioEl, inicioFmt, DATE_PLACEHOLDER);
+    renderText(dataPrevistaEl, previstoFmt, DATE_PLACEHOLDER);
+    updateDeadline(inicio, previsto);
+
+    const { modelo, lote } = parseModeloLote(modeloLote);
+    renderText(modelEl, modelo || MODEL_PLACEHOLDER, MODEL_PLACEHOLDER);
+    if (loteEl) {
+      loteEl.innerHTML = lote
+        ? `Lote &nbsp;·&nbsp; ${escapeHtml(lote)}`
+        : 'Sem Lote';
+    }
+
+    setPrioridadeAtiva(prioridadeAtiva);
+  }).catch(err => {
+    console.warn('Falha a carregar dados do PS1:', err);
+    renderText(dataInicioEl, DATE_PLACEHOLDER, DATE_PLACEHOLDER);
+    renderText(dataPrevistaEl, DATE_PLACEHOLDER, DATE_PLACEHOLDER);
+    updateDeadline(null, null);
+    renderText(modelEl, MODEL_PLACEHOLDER, MODEL_PLACEHOLDER);
+    if (loteEl) {
+      loteEl.innerHTML = 'Sem Lote';
+    }
+    setPrioridadeAtiva(null);
+  });
+
+  updateStatus(sheetRow);
+  renderZones(sheetRow);
+}
+
+function initializeSheetWatcher() {
+  const stop = watchSheetRow(SHEET_CONFIG, renderSheetData, SHEET_POLL_INTERVAL);
+  window.addEventListener('beforeunload', stop);
+}
+
+initializeSheetWatcher();
+
+// Carregar dados iniciais do sheet para atualizar o globo imediatamente
+loadSheetDataCached().then(cached => renderSheetData(cached)).catch(err => console.warn('Initial sheet load failed:', err));
+
+/* ── DATE / TIME ── */
+function updateTime() {
+  const now = new Date();
+  document.getElementById('htime').textContent =
+    now.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  document.getElementById('fdate').textContent =
+    now.toLocaleDateString('pt-PT', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' });
+}
+updateTime(); setInterval(updateTime, 1000);
+
+/* ── THREE.JS GLOBE ── */
+(function() {
+  const container = document.getElementById('globeContainer');
+  const W = container.offsetWidth;
+  const H = container.offsetHeight;
+
+  const scene    = new THREE.Scene();
+  const camera   = new THREE.PerspectiveCamera(45, W / H, 0.1, 2000);
+  camera.position.set(0, 30, 380);
+  camera.lookAt(0, 0, 0);
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setSize(W, H);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+  renderer.setClearColor(0x000000, 0);
+  container.appendChild(renderer.domElement);
+
+  const RADIUS = 140 * 0.96;
+  const globeGroup = new THREE.Group();
+  scene.add(globeGroup);
+
+  // ── SHADERS ──
+  const globeVS = `
+    varying vec3 vNormal;
+    varying vec2 vUv;
+    void main() {
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+      vNormal = normalize(normalMatrix * normal);
+      vUv = uv;
+    }`;
+  const globeFS = `
+    uniform sampler2D globeTexture;
+    varying vec3 vNormal;
+    varying vec2 vUv;
+    void main() {
+      vec3 diffuse = texture2D(globeTexture, vUv).xyz * 0.8;
+      float intensity = 1.05 - dot(vNormal, vec3(0.0,0.0,1.0));
+      vec3 atmosphere = vec3(1.0,1.0,1.0) * pow(intensity, 3.0) * 0.4;
+      gl_FragColor = vec4(diffuse + atmosphere, 1.04);
+    }`;
+
+  const atmVS = `
+    varying vec3 vNormal;
+    void main() {
+      vNormal = normalize(normalMatrix * normal);
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+    }`;
+  const atmFS = `
+    varying vec3 vNormal;
+    void main() {
+      float intensity = pow(0.7 - dot(vNormal, vec3(0.0,0.0,1.0)), 4.0);
+      gl_FragColor = vec4(1.0,1.0,1.0,1.0) * intensity;
+    }`;
+
+  // ── GLOBE SPHERE with texture ──
+  const loader   = new THREE.TextureLoader();
+  const EARTH_TX = 'https://res.cloudinary.com/djxxk3ipz/image/upload/v1776693284/WhatsApp_Image_2025-11-16_at_11.26.19_ssekf5.jpg';
+
+  const globeGeo = new THREE.SphereGeometry(RADIUS, 64, 64);
+  const globeMat = new THREE.ShaderMaterial({
+    uniforms: { globeTexture: { value: null } },
+    vertexShader: globeVS,
+    fragmentShader: globeFS,
+    blending: THREE.AdditiveBlending,
+    transparent: true,
+  });
+
+  loader.load(EARTH_TX, (tex) => {
+    tex.minFilter = THREE.LinearFilter;
+    tex.magFilter = THREE.LinearFilter;
+    globeMat.uniforms.globeTexture.value = tex;
+    globeMat.needsUpdate = true;
+  }, undefined, () => {
+    globeMat.fragmentShader = `
+      varying vec3 vNormal;
+      void main() {
+        float i = 1.05 - dot(vNormal, vec3(0,0,1));
+        vec3 atm = vec3(0.05,0.2,0.5) * pow(i,2.5);
+        gl_FragColor = vec4(vec3(0.02,0.06,0.14) + atm, 0.95);
+      }`;
+    globeMat.needsUpdate = true;
+  });
+
+  const globeMesh = new THREE.Mesh(globeGeo, globeMat);
+  globeGroup.add(globeMesh);
+
+  // ── ATMOSPHERE ──
+  const atmMesh = new THREE.Mesh(
+    new THREE.SphereGeometry(RADIUS, 64, 64),
+    new THREE.ShaderMaterial({
+      vertexShader: atmVS,
+      fragmentShader: atmFS,
+      blending: THREE.AdditiveBlending,
+      side: THREE.BackSide,
+      transparent: true,
+    })
+  );
+  atmMesh.scale.set(1.2, 1.2, 1.2);
+  globeGroup.add(atmMesh);
+
+  // ── DISC TEXTURE ──
+  function makeDiscTexture() {
+    const c = document.createElement('canvas');
+    c.width = c.height = 64;
+    const ctx = c.getContext('2d');
+    const g = ctx.createRadialGradient(32,32,0,32,32,32);
+    g.addColorStop(0,   'rgba(255,255,255,1)');
+    g.addColorStop(0.4, 'rgba(255,255,255,0.9)');
+    g.addColorStop(1,   'rgba(255,255,255,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(32,32,32,0,Math.PI*2); ctx.fill();
+    const t = new THREE.CanvasTexture(c);
+    return t;
+  }
+
+  // ── DOTS grid ──
+  function toXYZ(lat, lon, r) {
+    const phi   = (90 - lat)  * Math.PI / 180;
+    const theta = (180 - lon) * Math.PI / 180;
+    return new THREE.Vector3(
+      -r * Math.sin(phi) * Math.cos(theta),
+      -r * Math.cos(phi),
+      -r * Math.sin(phi) * Math.sin(theta)
+    );
+  }
+
+  function coordToPos(lat, lon, r) {
+    const phi   = (90 - lat)  * Math.PI / 180;
+    const theta = (180 - lon) * Math.PI / 180;
+    return new THREE.Vector3(
+      -r * Math.sin(phi) * Math.cos(theta),
+       r * Math.cos(phi),
+      -r * Math.sin(phi) * Math.sin(theta)
+    );
+  }
+
+  const dotR   = RADIUS + RADIUS * 0.025;
+  const posArr = [];
+  for (let lat = -80; lat <= 80; lat += 5) {
+    const cols = Math.round(Math.cos(lat * Math.PI / 180) * 36);
+    for (let i = 0; i < cols; i++) {
+      const lon = (i / cols) * 360 - 180;
+      const p   = toXYZ(lat, lon, dotR);
+      posArr.push(p.x, p.y, p.z);
+    }
+  }
+  const dotGeo = new THREE.BufferGeometry();
+  dotGeo.setAttribute('position', new THREE.Float32BufferAttribute(posArr, 3));
+  const dotMat = new THREE.PointsMaterial({
+    color: 0x05d5fa,
+    size: 2.2,
+    map: makeDiscTexture(),
+    transparent: true,
+    opacity: 0.8,
+    alphaTest: 0.05,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+  });
+  globeGroup.add(new THREE.Points(dotGeo, dotMat));
+
+  // ── MARKERS ──
+  function addMarker(lat, lon, color) {
+    const pos  = coordToPos(lat, lon, RADIUS + 3);
+    const group = new THREE.Group();
+    group.position.copy(pos);
+
+    const mesh = new THREE.Mesh(
+      new THREE.SphereGeometry(3.5, 12, 12),
+      new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.95 })
+    );
+    group.add(mesh);
+
+    const ring = new THREE.Mesh(
+      new THREE.RingGeometry(5, 7.5, 24),
+      new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.5, side: THREE.DoubleSide })
+    );
+    ring.lookAt(new THREE.Vector3(0,0,0));
+    group.add(ring);
+
+    globeGroup.add(group);
+    return group;
+  }
+
+  // Marcadores iniciais (Portugal como origem)
+  let ptRing = addMarker(38.7, -9.1, 0xffffff);
+  let destRing = null;
+  let arc = null;
+
+  // ── ARC ──
+  function makeArc(latA, lonA, latB, lonB) {
+    const start = coordToPos(latA, lonA, RADIUS + 3);
+    const end   = coordToPos(latB, lonB, RADIUS + 3);
+    const mid   = start.clone().add(end).multiplyScalar(0.5).normalize().multiplyScalar(RADIUS + 80);
+    const curve = new THREE.QuadraticBezierCurve3(start, mid, end);
+    const pts   = curve.getPoints(100);
+    const geo   = new THREE.BufferGeometry().setFromPoints(pts);
+    const mat   = new THREE.LineBasicMaterial({ color: 0x00aaff, transparent: true, opacity: 0.7 });
+    return { line: new THREE.Line(geo, mat), pts };
+  }
+
+  // ── TRAVEL DOT ──
+  const travDot = new THREE.Mesh(
+    new THREE.SphereGeometry(2.8, 8, 8),
+    new THREE.MeshBasicMaterial({ color: 0x00aaff })
+  );
+  // Posição inicial em Portugal
+  travDot.position.copy(coordToPos(38.7, -9.1, RADIUS + 3));
+  globeGroup.add(travDot);
+
+  const travGlow = new THREE.Mesh(
+    new THREE.SphereGeometry(5.5, 8, 8),
+    new THREE.MeshBasicMaterial({ color: 0x0066ff, transparent: true, opacity: 0.25, blending: THREE.AdditiveBlending, depthWrite: false })
+  );
+  travDot.add(travGlow);
+
+  const travGlow2 = new THREE.Mesh(
+    new THREE.SphereGeometry(9, 8, 8),
+    new THREE.MeshBasicMaterial({ color: 0x0044cc, transparent: true, opacity: 0.1, blending: THREE.AdditiveBlending, depthWrite: false })
+  );
+  travDot.add(travGlow2);
+
+  // Função para atualizar marcadores e arco baseado no país de destino
+  function updateGlobeDestination(countryName) {
+    console.log('Atualizando destino do globo para:', countryName);
+    const destCoords = getCountryCoordinates(countryName);
+    console.log('Coordenadas do destino:', destCoords);
+
+    // Remover marcador e arco antigos, se existirem
+    if (destRing) {
+      globeGroup.remove(destRing);
+      destRing = null;
+    }
+    if (arc && arc.line) {
+      globeGroup.remove(arc.line);
+      arc = null;
+    }
+
+    // Criar novo marcador de destino
+    destRing = addMarker(destCoords.lat, destCoords.lon, 0x00ff87);
+
+    // Criar novo arco
+    arc = makeArc(38.7, -9.1, destCoords.lat, destCoords.lon);
+    globeGroup.add(arc.line);
+  }
+  window.updateGlobeDestination = updateGlobeDestination;
+
+  // O destino do globo será atualizado a partir de renderSheetData()
+
+  globeGroup.rotation.y = THREE.MathUtils.degToRad(-(180 - 9.1));
+  globeGroup.rotation.x = THREE.MathUtils.degToRad(20);
+
+  let isRotating    = false;
+  let rotStart      = 0;
+  let rotStartAngle = 0;
+  const ROT_DUR     = 8000;
+
+  setInterval(() => {
+    if (isRotating) return;
+    isRotating    = true;
+    rotStart      = Date.now();
+    rotStartAngle = globeGroup.rotation.y;
+  }, 5 * 60 * 1000);
+
+  let t = 0;
+  function animate() {
+    requestAnimationFrame(animate);
+    t += 0.008;
+
+    if (arc && arc.pts && arc.pts.length > 0) {
+      const arcT  = (t * 0.25) % 1;
+      const arcPt = arc.pts[Math.floor(arcT * (arc.pts.length - 1))];
+      if (arcPt) travDot.position.copy(arcPt);
+    }
+
+    const p = 0.88 + 0.18 * Math.sin(t * 3);
+    ptRing.scale.set(p, p, 1);
+    if (destRing) {
+      destRing.scale.set(p, p, 1);
+    }
+
+    if (!isRotating) globeGroup.rotation.y -= 0.0015;
+
+    if (isRotating) {
+      const elapsed  = Date.now() - rotStart;
+      const progress = Math.min(elapsed / ROT_DUR, 1);
+      const ease     = progress < 0.5 ? 2*progress*progress : -1+(4-2*progress)*progress;
+      globeGroup.rotation.y = rotStartAngle + ease * Math.PI * 2;
+      if (progress >= 1) { globeGroup.rotation.y = rotStartAngle; isRotating = false; }
+    }
+
+    renderer.render(scene, camera);
+  }
+  animate();
+
+  // Resize com ResizeObserver — mais robusto do que window.resize
+  // (dispara também quando o layout do grid muda, não só quando a janela muda)
+  const ro = new ResizeObserver(() => {
+    const W2 = container.offsetWidth, H2 = container.offsetHeight;
+    if (W2 === 0 || H2 === 0) return;
+    camera.aspect = W2 / H2;
+    camera.updateProjectionMatrix();
+    renderer.setSize(W2, H2);
+  });
+  ro.observe(container);
+})();
+</script>
 </body>
 </html>
