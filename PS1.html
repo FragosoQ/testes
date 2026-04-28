@@ -2319,8 +2319,8 @@ updateTime(); setInterval(updateTime, 1000);
   function applyHeight() {
     const total = zonas.getBoundingClientRect().height;
     if (total <= 0) return;
-    // Split 75% prazo / 25% details (details é metade do que era no split 50/50)
-    prazo.style.height = `${total * 0.75}px`;
+    // Split: 65% prazo / 25% details — soma 90% do zonas-panel (10% libertado)
+    prazo.style.height = `${total * 0.65}px`;
     details.style.height = `${total * 0.25}px`;
   }
 
