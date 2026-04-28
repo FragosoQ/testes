@@ -9,7 +9,7 @@ const SHEET_CONFIG_DEFAULT = {
 
 // Cache system to avoid multiple fetches
 let sheetCache = {};
-let sheetCachePromise = null;
+let sheetCachePromises = {};
 
 function getCacheKey(config) {
   const cfg = Object.assign({}, SHEET_CONFIG_DEFAULT, config);
@@ -172,57 +172,142 @@ function getDaysDiff(dateValue1, dateValue2) {
   return Math.floor((date2 - date1) / (1000 * 60 * 60 * 24));
 }
 
-async function loadSheetDataCached(config = {}) {
+async function fetchSheetTable(config) {
+  const endpoint = getSheetEndpoint(config);
+  const response = await fetch(endpoint, { cache: 'no-cache' });
+  if (!response.ok) {
+    throw new Error(`Sheet fetch failed: ${response.status} ${response.statusText}`);
+  }
+  const text = await response.text();
+  const json = parseGvizResponse(text);
+  if (!json || !json.table) {
+    throw new Error('Sheet response did not contain table data');
+  }
+  return json.table;
+}
+
+function buildRowLookup(table, row) {
+  const valuesByHeader = {};
+  const valuesByColumn = {};
+
+  if (!row || !Array.isArray(table.cols)) {
+    return { valuesByHeader, valuesByColumn };
+  }
+
+  table.cols.forEach((col, index) => {
+    const value = getValueFromRow(row, index);
+    valuesByColumn[index] = value;
+
+    const normalizedLabel = normalizeString(col.label || col.id || `col${index}`);
+    valuesByHeader[normalizedLabel] = value;
+  });
+
+  return { valuesByHeader, valuesByColumn };
+}
+
+async function loadSheetDataCached(config = {}, options = {}) {
   const cfg = Object.assign({}, SHEET_CONFIG_DEFAULT, config);
   const cacheKey = getCacheKey(cfg);
+  const forceReload = options.forceReload === true;
 
-  // Return cached data if available
-  if (sheetCache[cacheKey]) {
+  if (!forceReload && sheetCache[cacheKey]) {
     return sheetCache[cacheKey];
   }
 
-  // If a fetch is already in progress, wait for it
-  if (sheetCachePromise) {
-    const result = await sheetCachePromise;
-    if (sheetCache[cacheKey]) {
-      return sheetCache[cacheKey];
-    }
+  if (!forceReload && sheetCachePromises[cacheKey]) {
+    return await sheetCachePromises[cacheKey];
   }
 
-  // Fetch and cache
-  sheetCachePromise = (async () => {
-    const endpoint = getSheetEndpoint(cfg);
-    const response = await fetch(endpoint, { cache: 'no-cache' });
-    if (!response.ok) {
-      throw new Error(`Sheet fetch failed: ${response.status} ${response.statusText}`);
-    }
-    const text = await response.text();
-    const json = parseGvizResponse(text);
-    if (!json || !json.table) {
-      throw new Error('Sheet response did not contain table data');
-    }
-
-    const row = findRowByKey(json.table, cfg.keyHeader, cfg.keyValue);
+  const promise = (async () => {
+    const table = await fetchSheetTable(cfg);
+    const row = findRowByKey(table, cfg.keyHeader, cfg.keyValue);
     if (!row) {
       throw new Error('No data row found in sheet');
     }
 
-    sheetCache[cacheKey] = { table: json.table, row: row };
-    return sheetCache[cacheKey];
+    const lookup = buildRowLookup(table, row);
+    const result = { table, row, valuesByHeader: lookup.valuesByHeader, valuesByColumn: lookup.valuesByColumn };
+
+    sheetCache[cacheKey] = result;
+    delete sheetCachePromises[cacheKey];
+    return result;
   })();
 
-  return await sheetCachePromise;
+  sheetCachePromises[cacheKey] = promise;
+  try {
+    return await promise;
+  } catch (error) {
+    delete sheetCachePromises[cacheKey];
+    throw error;
+  }
+}
+
+async function loadSheetRow(config = {}) {
+  const cached = await loadSheetDataCached(config);
+  return cached;
+}
+
+function getSheetRowValue(rowData, targetHeader, targetColumn) {
+  if (!rowData) {
+    return null;
+  }
+
+  if (targetHeader) {
+    const normalizedHeader = normalizeString(targetHeader);
+    if (Object.prototype.hasOwnProperty.call(rowData.valuesByHeader, normalizedHeader)) {
+      return rowData.valuesByHeader[normalizedHeader];
+    }
+  }
+
+  if (targetColumn) {
+    const index = columnLetterToIndex(targetColumn);
+    if (index >= 0) {
+      return rowData.valuesByColumn[index];
+    }
+  }
+
+  return null;
 }
 
 async function loadSheetValue(config = {}) {
   const cfg = Object.assign({}, SHEET_CONFIG_DEFAULT, config);
   const cached = await loadSheetDataCached(cfg);
 
-  const targetIndex = findSheetCell(cached.table, cfg.targetHeader, cfg.targetColumn);
-  if (targetIndex < 0) {
-    throw new Error(`Header ${cfg.targetHeader} not found and fallback column ${cfg.targetColumn} is invalid`);
+  return getSheetRowValue(cached, cfg.targetHeader, cfg.targetColumn);
+}
+
+function rowValuesSnapshot(rowData) {
+  if (!rowData || !rowData.valuesByHeader) {
+    return '';
   }
-  return getValueFromRow(cached.row, targetIndex);
+  const entries = Object.entries(rowData.valuesByHeader).sort(([a], [b]) => a.localeCompare(b));
+  return JSON.stringify(entries);
+}
+
+function watchSheetRow(config = {}, onChange, intervalMs = 20000) {
+  let lastSnapshot = null;
+  let stopped = false;
+
+  async function check() {
+    if (stopped) return;
+    try {
+      const cached = await loadSheetDataCached(config, { forceReload: true });
+      const snapshot = rowValuesSnapshot(cached);
+      if (snapshot !== lastSnapshot) {
+        lastSnapshot = snapshot;
+        onChange(cached);
+      }
+    } catch (error) {
+      console.warn('Sheet watch error:', error);
+    }
+  }
+
+  check();
+  const intervalId = setInterval(check, intervalMs);
+  return () => {
+    stopped = true;
+    clearInterval(intervalId);
+  };
 }
 
 /**

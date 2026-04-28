@@ -27,7 +27,8 @@ html, body {
   background-attachment: fixed;
   color: #fff;
   font-family: 'Barlow Condensed', sans-serif;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 /* ══════════════════════════════════════
@@ -517,10 +518,116 @@ footer {
 
 /* Ecrãs estreitos — empilha painéis (útil se a unidade rodar em portrait) */
 @media (max-width: 900px) {
+  html, body {
+    min-width: 0;
+  }
+
+  .shell {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
   main {
+    width: 100%;
+    max-width: 100%;
     grid-template-columns: 1fr;
     grid-template-rows: 1fr auto;
   }
+
+  .left,
+  .right,
+  .zonas-panel,
+  .prazo-section,
+  .details-section,
+  .hero,
+  .hero-evolucao,
+  .hero-id {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .hero {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-evolucao,
+  .hero-id,
+  .zonas-panel,
+  .prazo-section,
+  .details-section {
+    padding-left: clamp(12px, 3vw, 20px);
+    padding-right: clamp(12px, 3vw, 20px);
+  }
+
+  .hero-evolucao {
+    padding-top: clamp(14px, 2.5vh, 22px);
+    padding-bottom: clamp(14px, 2.5vh, 22px);
+  }
+
+  .hero-id {
+    padding-top: clamp(14px, 2.5vh, 22px);
+    padding-bottom: clamp(14px, 2.5vh, 22px);
+  }
+
+  .prazo-numbers {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .prazo-used {
+    font-size: clamp(40px, 10vw, 60px);
+  }
+
+  .prazo-div,
+  .prazo-total {
+    font-size: clamp(22px, 6vw, 34px);
+  }
+
+  .prazo-unit {
+    font-size: clamp(12px, 3.5vw, 16px);
+  }
+
+  .zona-card {
+    padding: clamp(8px, 1.2vh, 12px);
+  }
+
+  .zonas-grid {
+    width: 100%;
+    max-width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(8px, 1.2vh, 12px) clamp(10px, 2vw, 14px);
+    grid-auto-rows: minmax(0, auto);
+  }
+
+  .zona-card {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .id-modelo {
+    font-size: clamp(28px, 8vw, 46px);
+  }
+
+  .id-cliente {
+    font-size: clamp(18px, 5vw, 36px);
+  }
+
+  .id-pais-info {
+    font-size: clamp(16px, 4vw, 30px);
+  }
+
+  .detail-row {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .d-v {
+    font-size: clamp(14px, 3.5vw, 18px);
+  }
+
   .left { border-right: none; border-bottom: 1px solid rgba(255,255,255,0.12); }
   .h-center { display: none; } /* demasiado apertado */
 }
@@ -662,188 +769,40 @@ footer {
 const ec = v => v >= 75 ? '#00ff87' : v >= 40 ? '#00d4ff' : '#ffaa00';
 const bc = v => v === 100 ? '#00ff87' : v > 0 ? '#00d4ff' : null;
 
-/* ── EVOLUÇÃO ── */
+/* ── CONFIGURAÇÃO DE SHEET ── */
+const SHEET_POLL_INTERVAL = 20000;
+const SHEET_CONFIG = { id: '1GQUB52a2gKR429bjqJrNkbP5rjR7Z_4v85z9M7_Cr8Y', tab: 'PM1' };
+
 const FALLBACK_EV = 46;
 const evEl = document.getElementById('evNum');
-
-function updateEvolucao(value) {
-  const pct = Number.isFinite(value) ? value : FALLBACK_EV;
-  evEl.textContent = `${pct}%`;
-  evEl.style.color = ec(pct);
-  evEl.style.textShadow = `0 0 60px ${ec(pct)}40`;
-}
-
-updateEvolucao(FALLBACK_EV);
-loadSheetValue().then(rawValue => {
-  const parsed = parseSheetPercentage(rawValue);
-  if (Number.isFinite(parsed)) {
-    updateEvolucao(parsed);
-  }
-}).catch(err => {
-  console.warn('Sheet evolution load failed:', err);
-});
-
 const clientEl = document.querySelector('.id-cliente');
 const CLIENT_FALLBACK = clientEl ? clientEl.textContent.trim() : 'Bimbo del Peru';
-if (clientEl) {
-  loadSheetValue({ targetHeader: 'CLIENTE', targetColumn: 'K' })
-    .then(rawValue => {
-      if (rawValue != null && String(rawValue).trim().length > 0) {
-        clientEl.textContent = String(rawValue).trim();
-      }
-    })
-    .catch(err => {
-      console.warn('Sheet cliente load failed:', err);
-      clientEl.textContent = CLIENT_FALLBACK;
-    });
-}
-
 const modelEl = document.querySelector('.id-modelo');
 const MODEL_FALLBACK = modelEl ? modelEl.textContent.trim() : 'MWS715 SDS EXD DRD';
-if (modelEl) {
-  loadSheetValue({ targetHeader: 'MODELO', targetColumn: 'N' })
-    .then(rawValue => {
-      if (rawValue != null && String(rawValue).trim().length > 0) {
-        modelEl.textContent = String(rawValue).trim();
-      }
-    })
-    .catch(err => {
-      console.warn('Sheet modelo load failed:', err);
-      modelEl.textContent = MODEL_FALLBACK;
-    });
-}
-
 const loteEl = document.querySelector('.id-lote');
 const LOTE_FALLBACK = loteEl ? loteEl.textContent.trim() : 'Lote · 26L_1';
-if (loteEl) {
-  loadSheetValue({ targetHeader: 'Lote', targetColumn: 'AK' })
-    .then(rawValue => {
-      if (rawValue != null && String(rawValue).trim().length > 0) {
-        loteEl.innerHTML = `Lote &nbsp;·&nbsp; ${String(rawValue).trim()}`;
-      }
-    })
-    .catch(err => {
-      console.warn('Sheet lote load failed:', err);
-      loteEl.innerHTML = LOTE_FALLBACK;
-    });
-}
-
 const paisInfoEl = document.querySelector('.id-pais-info');
 const PAIS_INFO_FALLBACK = paisInfoEl ? paisInfoEl.textContent.trim() : 'Peru · EN';
-if (paisInfoEl) {
-  Promise.all([
-    loadSheetValue({ targetHeader: 'PAÍS', targetColumn: 'L' }).catch(() => 'Peru'),
-    loadSheetValue({ targetHeader: 'IDIOMA', targetColumn: 'M' }).catch(() => 'EN')
-  ]).then(([pais, idioma]) => {
-    const paisStr = String(pais || 'Peru').trim();
-    const idiomaStr = String(idioma || 'EN').trim();
-    paisInfoEl.textContent = `${paisStr} · ${idiomaStr}`;
-
-    // Atualizar bandeira dinamicamente baseada no país
-    const flagEl = document.querySelector('.id-flag');
-    if (flagEl) {
-      flagEl.textContent = getCountryFlag(paisStr);
-    }
-  }).catch(err => {
-    console.warn('Sheet pais/idioma load failed:', err);
-    paisInfoEl.textContent = PAIS_INFO_FALLBACK;
-  });
-}
-
-// Additional dynamic fields
+const flagEl = document.querySelector('.id-flag');
 const operadorEl = document.querySelector('.f-op');
 const OPERADOR_FALLBACK = operadorEl ? operadorEl.textContent.trim() : 'Richard · Diogo';
-if (operadorEl) {
-  loadSheetValue({ targetHeader: 'OPERADOR', targetColumn: 'AH' })
-    .then(rawValue => {
-      if (rawValue != null && String(rawValue).trim().length > 0) {
-        operadorEl.textContent = String(rawValue).trim();
-      }
-    })
-    .catch(err => {
-      console.warn('Sheet operador load failed:', err);
-      operadorEl.textContent = OPERADOR_FALLBACK;
-    });
-}
-
 const nserieEl = document.querySelector('.f-nserie');
 const NSERIE_FALLBACK = nserieEl ? nserieEl.textContent.trim() : 'SWCG02003025';
-if (nserieEl) {
-  loadSheetValue({ targetHeader: 'N. SÉRIE', targetColumn: 'X' })
-    .then(rawValue => {
-      if (rawValue != null && String(rawValue).trim().length > 0) {
-        nserieEl.textContent = String(rawValue).trim();
-      }
-    })
-    .catch(err => {
-      console.warn('Sheet nserie load failed:', err);
-      nserieEl.textContent = NSERIE_FALLBACK;
-    });
-}
-
-const dataInicioEl = document.querySelectorAll('.d-v')[0]; // First .d-v element
+const dataInicioEl = document.querySelectorAll('.d-v')[0];
 const DATA_INICIO_FALLBACK = dataInicioEl ? dataInicioEl.textContent.trim() : '14 / 04 / 2026';
-if (dataInicioEl) {
-  loadSheetValue({ targetHeader: 'DATA INICIO PRODUÇÃO', targetColumn: 'E' })
-    .then(rawValue => {
-      const formatted = formatSheetDate(rawValue);
-      if (formatted) {
-        dataInicioEl.textContent = formatted;
-      }
-    })
-    .catch(err => {
-      console.warn('Sheet data inicio load failed:', err);
-      dataInicioEl.textContent = DATA_INICIO_FALLBACK;
-    });
-}
-
-const dataPrevistaEl = document.querySelectorAll('.d-v')[1]; // Second .d-v element
+const dataPrevistaEl = document.querySelectorAll('.d-v')[1];
 const DATA_PREVISTA_FALLBACK = dataPrevistaEl ? dataPrevistaEl.textContent.trim() : '22 / 04 / 2026';
-if (dataPrevistaEl) {
-  loadSheetValue({ targetHeader: 'DATA PRETENDIDA', targetColumn: 'G' })
-    .then(rawValue => {
-      const formatted = formatSheetDate(rawValue);
-      if (formatted) {
-        dataPrevistaEl.textContent = formatted;
-      }
-    })
-    .catch(err => {
-      console.warn('Sheet data prevista load failed:', err);
-      dataPrevistaEl.textContent = DATA_PREVISTA_FALLBACK;
-    });
-}
-
-const encCliEl = document.querySelectorAll('.d-v')[2]; // Third .d-v element
+const encCliEl = document.querySelectorAll('.d-v')[2];
 const ENC_CLI_FALLBACK = encCliEl ? encCliEl.textContent.trim() : '34_2026';
-if (encCliEl) {
-  loadSheetValue({ targetHeader: 'ENC. CLI.', targetColumn: 'J' })
-    .then(rawValue => {
-      if (rawValue != null && String(rawValue).trim().length > 0) {
-        encCliEl.textContent = String(rawValue).trim();
-      }
-    })
-    .catch(err => {
-      console.warn('Sheet enc cli load failed:', err);
-      encCliEl.textContent = ENC_CLI_FALLBACK;
-    });
-}
-
 const ordProdEl = document.querySelector('.h-op');
 const ORD_PROD_FALLBACK = ordProdEl ? ordProdEl.textContent.trim() : 'OP_149_2026';
-if (ordProdEl) {
-  loadSheetValue({ targetHeader: 'ORD. PROD.', targetColumn: 'I' })
-    .then(rawValue => {
-      if (rawValue != null && String(rawValue).trim().length > 0) {
-        ordProdEl.textContent = String(rawValue).trim();
-      }
-    })
-    .catch(err => {
-      console.warn('Sheet ord prod load failed:', err);
-      ordProdEl.textContent = ORD_PROD_FALLBACK;
-    });
-}
+const folgaEl = document.getElementById('folgaSpan');
+const prazoUsedEl = document.getElementById('prazoUsed');
+const prazoBarEl = document.getElementById('prazoBar');
+const prazoTotalEl = document.querySelector('.prazo-total');
+const statusEl = document.getElementById('statusLabel');
+const zg = document.getElementById('zonasGrid');
 
-/* ── ZONAS ── */
 const ZONA_CONFIGS = [
   { nome: 'Cuba', header: 'CUBA', column: 'AA' },
   { nome: 'Estrutura', header: 'ESTRUTURA', column: 'AB' },
@@ -853,27 +812,41 @@ const ZONA_CONFIGS = [
   { nome: 'Testes', header: 'TESTES', column: 'AF' },
 ];
 
-const zg = document.getElementById('zonasGrid');
+function updateEvolucao(value) {
+  const pct = Number.isFinite(value) ? value : FALLBACK_EV;
+  evEl.textContent = `${pct}%`;
+  evEl.style.color = ec(pct);
+  evEl.style.textShadow = `0 0 60px ${ec(pct)}40`;
+}
 
-// Load all zone values in parallel
-Promise.all(ZONA_CONFIGS.map(config => 
-  loadSheetValue({ targetHeader: config.header, targetColumn: config.column })
-    .then(rawValue => {
-      const pct = parseSheetPercentage(rawValue) || 0;
-      return { nome: config.nome, pct: pct };
-    })
-    .catch(err => {
-      console.warn(`Sheet ${config.header} load failed:`, err);
-      return { nome: config.nome, pct: 0 }; // fallback to 0%
-    })
-)).then(zonas => {
-  // Clear existing zones
+function getFieldValue(rowData, header, column, fallback = null) {
+  const value = rowData ? getSheetRowValue(rowData, header, column) : null;
+  if (value == null || (typeof value === 'string' && value.trim() === '')) {
+    return fallback;
+  }
+  return value;
+}
+
+function renderText(el, value, fallback = '') {
+  if (!el) return;
+  el.textContent = value != null ? String(value) : fallback;
+}
+
+function renderLote(value) {
+  if (!loteEl) return;
+  loteEl.innerHTML = `Lote &nbsp;·&nbsp; ${String(value != null ? value : LOTE_FALLBACK)}`;
+}
+
+function renderZones(rowData) {
+  const zonas = ZONA_CONFIGS.map(config => {
+    const raw = getFieldValue(rowData, config.header, config.column, 0);
+    return { nome: config.nome, pct: parseSheetPercentage(raw) || 0 };
+  });
+
   zg.innerHTML = '';
-  
-  // Render zones
   zonas.forEach(z => {
-    const cls  = z.pct === 100 ? 'done' : z.pct > 0 ? 'going' : 'empty';
-    const col  = bc(z.pct);
+    const cls = z.pct === 100 ? 'done' : z.pct > 0 ? 'going' : 'empty';
+    const col = bc(z.pct);
     const card = document.createElement('div');
     card.className = `zona-card ${cls}`;
     card.innerHTML = `
@@ -884,119 +857,96 @@ Promise.all(ZONA_CONFIGS.map(config =>
       </div>`;
     zg.appendChild(card);
   });
-}).catch(err => {
-  console.warn('Failed to load zones:', err);
-  // Fallback to static zones
-  const fallbackZonas = [
-    { nome: 'Cuba', pct: 100 },
-    { nome: 'Estrutura', pct: 65 },
-    { nome: 'Interior', pct: 100 },
-    { nome: 'Envolventes', pct: 0 },
-    { nome: 'Área Técnica', pct: 0 },
-    { nome: 'Testes', pct: 0 },
-  ];
-  
-  zg.innerHTML = '';
-  fallbackZonas.forEach(z => {
-    const cls  = z.pct === 100 ? 'done' : z.pct > 0 ? 'going' : 'empty';
-    const col  = bc(z.pct);
-    const card = document.createElement('div');
-    card.className = `zona-card ${cls}`;
-    card.innerHTML = `
-      <div class="zona-card-label">${z.nome}</div>
-      <div class="zona-card-pct" style="color:${col || 'rgba(255,255,255,0.15)'}">${z.pct}%</div>
-      <div class="zona-card-bar">
-        <div class="zona-card-fill" style="width:${z.pct}%;background:${col || 'rgba(255,255,255,0.07)'}"></div>
-      </div>`;
-    zg.appendChild(card);
-  });
-});
+}
 
-/* ── PRAZO ── */
-let dataInicio = null, dataPrevista = null;
-let diasUsados = 6, diasTotal = 8, folga = 2;
-
-// Carregar datas para calcular prazos
-Promise.all([
-  loadSheetValue({ targetHeader: 'DATA INICIO PRODUÇÃO', targetColumn: 'E' }).catch(() => null),
-  loadSheetValue({ targetHeader: 'DATA PRETENDIDA', targetColumn: 'G' }).catch(() => null)
-]).then(([dataInicioBruta, dataPrevistiaBruta]) => {
-  if (dataInicioBruta && dataPrevistiaBruta) {
-    dataInicio = dataInicioBruta;
-    dataPrevista = dataPrevistiaBruta;
-
-    // Calcular dias úteis (segunda a sexta) considerando feriados em Portugal
-    const hoje = new Date();
-    hoje.setHours(0, 0, 0, 0);
-
-    diasTotal = getWorkDaysCount(dataInicio, dataPrevista, true) || 8;
-    diasUsados = getWorkDaysCount(dataInicio, hoje, true) || 6;
-    folga = getWorkDaysCount(hoje, dataPrevista, false) || 2;
-
-    // Garantir valores não-negativos
-    diasUsados = Math.max(0, diasUsados);
-    folga = Math.max(0, folga);
-    diasTotal = Math.max(diasUsados, diasTotal);
+function updateDeadline(startValue, dueValue) {
+  if (startValue == null || dueValue == null) {
+    return;
   }
 
-  // Atualizar UI
-  const ratio = diasUsados / diasTotal;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const total = getWorkDaysCount(startValue, dueValue, true);
+  const used = getWorkDaysCount(startValue, today, true);
+  const remaining = getWorkDaysCount(today, dueValue, false);
+
+  if (total == null || used == null || remaining == null) {
+    return;
+  }
+
+  const ratio = total > 0 ? Math.min(1, used / total) : 0;
   const pc = ratio >= .9 ? '#ff3b3b' : ratio >= .7 ? '#ffaa00' : '#00ff87';
-  
-  const prazoUsedEl = document.getElementById('prazoUsed');
-  const prazoBarEl = document.getElementById('prazoBar');
-  const folgaEl = document.getElementById('folgaSpan');
-  const prazoTotalEl = document.querySelector('.prazo-total');
 
   if (prazoUsedEl) {
-    prazoUsedEl.textContent = diasUsados;
+    prazoUsedEl.textContent = used;
     prazoUsedEl.style.color = pc;
     prazoUsedEl.style.textShadow = `0 0 40px ${pc}50`;
   }
-
   if (prazoBarEl) {
-    prazoBarEl.style.width = (ratio * 100) + '%';
+    prazoBarEl.style.width = `${ratio * 100}%`;
     prazoBarEl.style.background = pc;
   }
-
   if (folgaEl) {
-    folgaEl.textContent = `${folga} dias restantes`;
-    folgaEl.style.color = folga <= 1 ? '#ff3b3b' : folga <= 3 ? '#ffaa00' : '#00ff87';
+    folgaEl.textContent = `${remaining} dias restantes`;
+    folgaEl.style.color = remaining <= 1 ? '#ff3b3b' : remaining <= 3 ? '#ffaa00' : '#00ff87';
   }
-
   if (prazoTotalEl) {
-    prazoTotalEl.textContent = diasTotal;
+    prazoTotalEl.textContent = total;
   }
-}).catch(err => {
-  console.warn('Failed to calculate prazo:', err);
-  // Use static fallback
-  const ratio = diasUsados / diasTotal;
-  const pc = ratio >= .9 ? '#ff3b3b' : ratio >= .7 ? '#ffaa00' : '#00ff87';
-  document.getElementById('prazoUsed').style.color = pc;
-  document.getElementById('prazoUsed').style.textShadow = `0 0 40px ${pc}50`;
-  document.getElementById('prazoBar').style.width = (ratio * 100) + '%';
-  document.getElementById('prazoBar').style.background = pc;
-  const fs = document.getElementById('folgaSpan');
-  fs.textContent = `${folga} dias de folga`;
-  fs.style.color = folga <= 1 ? '#ff3b3b' : folga <= 3 ? '#ffaa00' : '#00ff87';
-});
+}
 
-/* ── STATUS (Em Curso / Standby) ── */
-const statusEl = document.getElementById('statusLabel');
-loadSheetDataCached()
-  .then(cached => {
-    const chaveValue = getValueFromRow(cached.row, 0); // Coluna A (índice 0)
-    const statusText = (chaveValue && String(chaveValue).trim().length > 0) ? 'Em Curso · ON' : 'standby';
-    if (statusEl) {
-      statusEl.textContent = statusText.toUpperCase();
-    }
-  })
-  .catch(err => {
-    console.warn('Failed to load status:', err);
-    if (statusEl) {
-      statusEl.textContent = 'Em Curso · ON';
-    }
-  });
+function updateStatus(rowData) {
+  const statusValue = getFieldValue(rowData, null, 'A', null);
+  if (!statusEl) return;
+  const statusText = statusValue && String(statusValue).trim().length > 0 ? 'Em Curso · ON' : 'standby';
+  statusEl.textContent = statusText.toUpperCase();
+}
+
+function renderSheetData(sheetRow) {
+  if (!sheetRow) return;
+
+  const evRaw = getFieldValue(sheetRow, 'EVOLUÇÃO', 'Y', FALLBACK_EV);
+  updateEvolucao(parseSheetPercentage(evRaw));
+
+  renderText(clientEl, getFieldValue(sheetRow, 'CLIENTE', 'K', CLIENT_FALLBACK), CLIENT_FALLBACK);
+  renderText(modelEl, getFieldValue(sheetRow, 'MODELO', 'N', MODEL_FALLBACK), MODEL_FALLBACK);
+  renderLote(getFieldValue(sheetRow, 'LOTE', 'AK', LOTE_FALLBACK));
+
+  const pais = getFieldValue(sheetRow, 'PAÍS', 'L', 'Portugal');
+  const idioma = getFieldValue(sheetRow, 'IDIOMA', 'M', 'EN');
+  renderText(paisInfoEl, `${pais} · ${idioma}`, PAIS_INFO_FALLBACK);
+  if (flagEl) {
+    flagEl.textContent = getCountryFlag(pais);
+  }
+  console.log('País do sheet:', pais);
+  if (typeof updateGlobeDestination === 'function') {
+    updateGlobeDestination(pais);
+  }
+
+  renderText(operadorEl, getFieldValue(sheetRow, 'OPERADOR', 'AH', OPERADOR_FALLBACK), OPERADOR_FALLBACK);
+  renderText(nserieEl, getFieldValue(sheetRow, 'N. SÉRIE', 'X', NSERIE_FALLBACK), NSERIE_FALLBACK);
+
+  renderText(dataInicioEl, formatSheetDate(getFieldValue(sheetRow, 'DATA INICIO PRODUÇÃO', 'E', DATA_INICIO_FALLBACK)), DATA_INICIO_FALLBACK);
+  renderText(dataPrevistaEl, formatSheetDate(getFieldValue(sheetRow, 'DATA PRETENDIDA', 'G', DATA_PREVISTA_FALLBACK)), DATA_PREVISTA_FALLBACK);
+
+  renderText(encCliEl, getFieldValue(sheetRow, 'ENC. CLI.', 'J', ENC_CLI_FALLBACK), ENC_CLI_FALLBACK);
+  renderText(ordProdEl, getFieldValue(sheetRow, 'ORD. PROD.', 'I', ORD_PROD_FALLBACK), ORD_PROD_FALLBACK);
+
+  updateDeadline(getFieldValue(sheetRow, 'DATA INICIO PRODUÇÃO', 'E', null), getFieldValue(sheetRow, 'DATA PRETENDIDA', 'G', null));
+  updateStatus(sheetRow);
+  renderZones(sheetRow);
+}
+
+function initializeSheetWatcher() {
+  const stop = watchSheetRow(SHEET_CONFIG, renderSheetData, SHEET_POLL_INTERVAL);
+  window.addEventListener('beforeunload', stop);
+}
+
+initializeSheetWatcher();
+
+// Carregar dados iniciais do sheet para atualizar o globo imediatamente
+loadSheetDataCached().then(cached => renderSheetData(cached)).catch(err => console.warn('Initial sheet load failed:', err));
 
 /* ── DATE / TIME ── */
 function updateTime() {
@@ -1171,21 +1121,24 @@ updateTime(); setInterval(updateTime, 1000);
   // ── MARKERS ──
   function addMarker(lat, lon, color) {
     const pos  = coordToPos(lat, lon, RADIUS + 3);
+    const group = new THREE.Group();
+    group.position.copy(pos);
+
     const mesh = new THREE.Mesh(
       new THREE.SphereGeometry(3.5, 12, 12),
       new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.95 })
     );
-    mesh.position.copy(pos);
-    globeGroup.add(mesh);
+    group.add(mesh);
 
     const ring = new THREE.Mesh(
       new THREE.RingGeometry(5, 7.5, 24),
       new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.5, side: THREE.DoubleSide })
     );
-    ring.position.copy(pos);
     ring.lookAt(new THREE.Vector3(0,0,0));
-    globeGroup.add(ring);
-    return ring;
+    group.add(ring);
+
+    globeGroup.add(group);
+    return group;
   }
 
   // Marcadores iniciais (Portugal como origem)
@@ -1210,6 +1163,8 @@ updateTime(); setInterval(updateTime, 1000);
     new THREE.SphereGeometry(2.8, 8, 8),
     new THREE.MeshBasicMaterial({ color: 0x00aaff })
   );
+  // Posição inicial em Portugal
+  travDot.position.copy(coordToPos(38.7, -9.1, RADIUS + 3));
   globeGroup.add(travDot);
 
   const travGlow = new THREE.Mesh(
@@ -1226,7 +1181,9 @@ updateTime(); setInterval(updateTime, 1000);
 
   // Função para atualizar marcadores e arco baseado no país de destino
   function updateGlobeDestination(countryName) {
+    console.log('Atualizando destino do globo para:', countryName);
     const destCoords = getCountryCoordinates(countryName);
+    console.log('Coordenadas do destino:', destCoords);
 
     // Remover marcador e arco antigos, se existirem
     if (destRing) {
@@ -1245,19 +1202,9 @@ updateTime(); setInterval(updateTime, 1000);
     arc = makeArc(38.7, -9.1, destCoords.lat, destCoords.lon);
     globeGroup.add(arc.line);
   }
+  window.updateGlobeDestination = updateGlobeDestination;
 
-  // Carregar país dinamicamente e atualizar globo
-  loadSheetValue({ targetHeader: 'PAÍS', targetColumn: 'L' })
-    .then(countryValue => {
-      if (countryValue && String(countryValue).trim().length > 0) {
-        const country = String(countryValue).trim();
-        updateGlobeDestination(country);
-      }
-    })
-    .catch(err => {
-      console.warn('Sheet país load failed for globe:', err);
-      // Sem destino dinâmico se o país não for carregado
-    });
+  // O destino do globo será atualizado a partir de renderSheetData()
 
   globeGroup.rotation.y = THREE.MathUtils.degToRad(-(180 - 9.1));
   globeGroup.rotation.x = THREE.MathUtils.degToRad(20);
