@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>SOMENGIL - PS1</title>
+  <link rel="icon" href="https://static.wixstatic.com/media/a6967f_874354ad69c5461eafd229ab23540233~mv2.png" type="image/png">
+  <link rel="stylesheet" href="styles/index.css">
+  <link rel="stylesheet" href="https://cdn-uicons.flaticon.com/2.5.1/uicons-thin-rounded/css/uicons-thin-rounded.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=double_arrow">
+
+  <style>
+    /* --- CSS GERAL --- */
+    
+    body, html {
+      margin: 0;
+      padding: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+      width: 100vw;
+      min-height: 100vh;
+      font-family: 'Open Sans', sans-serif;
+      background: radial-gradient(circle, #020d3a, #000000);
+    }
+
+    /* --- GRID ESPECÍFICO --- */
+    .grid-container {
+      width: clamp(600px, 50vw, 1000px);
+      grid-template-columns: repeat(4, 1fr);
+      grid-template-rows: 1fr 1fr auto auto auto;
+    }
+    
+    /* Ajuste quando houver mais de 3 slots - reduz altura dos cards superiores */
+    .grid-container.expanded-planeamento {
+      grid-template-rows: 0.8fr 0.8fr auto auto;
+    }
+    
+    /* Aumenta altura do card PLANEAMENTO quando expandido */
+    .grid-container.expanded-planeamento .info-panel-card-2 {
+      min-height: 200px;
+    }
+
+    .destination-card {
+      display: none !important;
+    }
+
+    .card-chart {
+      flex: 1;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .info-panel-content-1 {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+      gap: 5px;
+      overflow: hidden;
+    }
+
+    .buffer-item {
+      font-size: clamp(9px, 0.9vw, 12px);
+      font-weight: 600;
+      padding: 4px 8px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 6px;
+      color: white;
+      width: 90%;
+      text-align: center;
+      transition: all 0.3s ease;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .buffer-item.active {
+      background: rgba(75, 140, 242, 0.3);
+      border: 2px solid rgba(75, 140, 242, 0.8);
+      box-shadow: 0 0 10px rgba(75, 140, 242, 0.5);
+      font-weight: bold;
+      animation: pulse-active 2s ease-in-out infinite;
+    }
+
+    .buffer-item.active-weak {
+      background: rgba(75, 140, 242, 0.12);
+      border: 1px solid rgba(75, 140, 242, 0.35);
+      box-shadow: 0 0 6px rgba(75, 140, 242, 0.25);
+      font-weight: 600;
+    }
+
+    .buffer-item.active-slot2 {
+      background: rgba(192, 192, 192, 0.3);
+      border: 2px solid rgba(192, 192, 192, 0.8);
+      box-shadow: 0 0 10px rgba(192, 192, 192, 0.5);
+      font-weight: bold;
+      animation: pulse-active-slot2 2s ease-in-out infinite;
+    }
+
+    .buffer-item.active-slot3 {
+      background: rgba(255, 215, 0, 0.3);
+      border: 2px solid rgba(255, 215, 0, 0.8);
+      box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+      font-weight: bold;
+      animation: pulse-active-slot3 2s ease-in-out infinite;
+    }
+
+    .buffer-item.active-slot4 {
+      background: rgba(255, 99, 71, 0.3);
+      border: 2px solid rgba(255, 99, 71, 0.8);
+      box-shadow: 0 0 10px rgba(255, 99, 71, 0.5);
+      font-weight: bold;
+      animation: pulse-active-slot4 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse-active {
+      0%, 100% { box-shadow: 0 0 10px rgba(75, 140, 242, 0.5); }
+      50% { box-shadow: 0 0 20px rgba(75, 140, 242, 0.8); }
+    }
+
+    @keyframes pulse-active-slot2 {
+      0%, 100% { box-shadow: 0 0 10px rgba(192, 192, 192, 0.5); }
+      50% { box-shadow: 0 0 20px rgba(192, 192, 192, 0.8); }
+    }
+
+    @keyframes pulse-active-slot3 {
+      0%, 100% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
+      50% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.8); }
+    }
+
+    @keyframes pulse-active-slot4 {
+      0%, 100% { box-shadow: 0 0 10px rgba(255, 99, 71, 0.5); }
+      50% { box-shadow: 0 0 20px rgba(255, 99, 71, 0.8); }
+    }
+
+    .info-panel-content-1 .info-line {
+      font-size: clamp(70px, 10vw, 120px) !important;
+      font-weight: bold;
+      line-height: 0.95;
+      white-space: nowrap;
+      color: white;
+    }
+
+    .info-panel-content-2, .info-panel-content-3 {
+      width: 100%;
+      padding: 5px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .info-panel-card-2 .card-title {
+        text-align: center !important;
+        padding-left: 10px;
+        padding-right: 10px;
+      font-size: 14px !important;
+        width: 100%;
+        box-sizing: border-box;
+        white-space: nowrap;
+        overflow: visible;
+        line-height: 1.2;
+    }
+    .info-panel-card-2 .info-panel-content-2 {
+        align-items: flex-start !important;
+        text-align: left;
+        padding: 10px !important;
+        overflow: hidden;
+        height: 100%;
+        display: grid;
+      grid-template-columns: 1fr;
+        gap: 8px;
+        align-content: start;
+    }
+    
+    /* Grid 1x2 quando houver 2 lotes */
+    .info-panel-content-2.two-rows {
+      grid-template-columns: 1fr;
+      grid-template-rows: repeat(2, 1fr);
+      gap: 6px;
+    }
+    
+    /* Grid 2x2 quando houver 3+ lotes */
+    .info-panel-content-2.multi-slot {
+      grid-template-columns: repeat(2, 1fr);
+      grid-template-rows: repeat(2, 1fr);
+      gap: 6px;
+    }
+    
+    /* Quando há apenas 1 slot */
+    .info-panel-content-2:has(.slot-column:only-child) {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-evenly;
+        padding-left: 10px !important;
+    }
+    
+    .slot-column {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        padding: 6px;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 4px;
+        border-left: 3px solid rgba(255, 255, 255, 0.3);
+        min-height: fit-content;
+
+    }
+    
+    /* Remove estilo de background quando há apenas 1 slot */
+    .info-panel-content-2:has(.slot-column:only-child) .slot-column {
+        background: transparent;
+        border-left: none;
+        padding: 0;
+    }
+    
+.slot-column .info-line {
+    display: block;        /* Garante que ocupe a linha toda */
+    width: 100%;           /* Força a largura total do container pai */
+    box-sizing: border-box; /* Impede que padding/border "estourem" a largura */
+    
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+    line-height: 1.2;
+    font-size: 20px;
+    
+    /* Opcional: se quiser que o texto ocupe o espaço visualmente 
+       distribuído, use text-align */
+    /* text-align: justify; */
+ }
+    
+    /* Texto menor quando houver mais de 1 lote */
+    .info-panel-content-2.two-rows .slot-column .info-line,
+    .info-panel-content-2.multi-slot .slot-column .info-line {
+      font-size: clamp(8px, 0.75vw, 11px);
+    }
+    
+    .info-panel-card-3 .card-title {
+        font-size: clamp(17px, 1.7vw, 21px) !important;
+    }
+
+    .info-panel-content-5 {
+      align-items: stretch;
+      grid-auto-rows: minmax(0, 1fr);
+      row-gap: 10px;
+      column-gap: 10px;
+    }
+
+    .info-panel-content-5 > div {
+      height: 100%;
+      min-height: 0;
+      box-sizing: border-box;
+    }
+
+    /* --- NOVAS LINHAS: PRIORIDADE ATIVA --- */
+    #grid-item-1, #grid-item-2,
+    #grid-item-4, #grid-item-5 {
+      grid-column: span 1;
+      min-height: 160px;
+    }
+
+    #grid-item-3, #grid-item-6 {
+      display: none;
+    }
+
+    #grid-item-7 {
+      grid-column: span 2;
+      min-height: 160px;
+    }
+
+    #grid-item-8 {
+      grid-column: span 1;
+      min-height: 160px;
+    }
+
+    #grid-item-7, #grid-item-8 {
+      min-height: 160px;
+    }
+
+    /* Hide separate percent card since it's now merged into PRIORIDADE ATIVA */
+    #grid-item-8 {
+      display: none;
+    }
+
+    #grid-item-9 {
+      min-height: 160px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: 8px;
+    }
+
+    #grid-item-9 .card-title {
+      font-size: clamp(108px, 8vw, 116px) !important;
+      font-weight: bold;
+      color: white;
+      margin: 0 !important;
+    }
+
+    #grid-item-11 {
+      grid-column: span 1;
+      min-height: 160px;
+      overflow: hidden;
+      border-radius: 8px;
+    }
+
+    #grid-item-11 video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* --- BOTTOM SECTION --- */
+    .bottom-section {
+      grid-column: 1 / -1;
+      display: flex;
+      gap: 10px;
+      min-height: 0;
+      height: 18vh;
+      max-height: 200px;
+      align-items: stretch;
+    }
+
+    .bottom-section .grid-item {
+      flex: 1 1 0;
+      min-width: 0;
+    }
+
+    .bottom-section .card-title,
+    .bottom-section .info-line,
+    .bottom-section .buffer-item,
+    .bottom-section .info-panel-content-5,
+    .bottom-section .info-panel-content-5 > div,
+    .bottom-section .slot-column {
+      max-width: 100%;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    .bottom-section .buffer-item {
+      text-overflow: clip;
+    }
+
+    .goal-chart-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+        padding: 5px;
+        box-sizing: border-box;
+        overflow: hidden;
+    }
+    
+    .goal-chart {
+        width: 100%;
+        height: 100%;
+        max-width: 100%;
+        max-height: 100%;
+        display: block;
+    }
+
+    /* --- IMAGE + STATUS WRAPPER --- */
+    .info-panel-image-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .image-wrapper {
+      position: relative;
+      height: 100%; 
+      width: auto;
+      display: flex;
+      align-items: center;
+    }
+
+    .info-panel-image {
+      height: 100%; 
+      width: auto; 
+      max-width: 100%;
+      object-fit: contain;
+      padding: 5px;
+    }
+
+    /* --- PROGRESS BAR (Desktop) --- */
+    .progress-bar-container {
+      position: fixed;
+      bottom: 8vh;
+      left: 25vw; 
+      transform: translateX(-50%);
+      width: clamp(200px, 30vw, 500px);
+      z-index: 1000;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column-reverse;
+      gap: 8px;
+    }
+
+    .progress-bar-wrapper {
+      width: 100%;
+      height: 12px;
+      background-color: rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      overflow: hidden;
+      pointer-events: auto;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #80a5dc 0%, #4b8cf2 50%, #007bff 100%);
+      width: 0%;
+      transition: width 0.5s ease;
+    }
+    
+    .dg.a { margin-top: 10px; }
+    .dg .close-button, .dg .close, .dg .title { display: none !important; }
+
+    /* --- MEDIA QUERIES (MOBILE) --- */
+    @media (max-width: 1024px) {
+      .grid-container {
+        width: 35vw;
+        top: 12vh;
+        gap: 10px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      body, html {
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+      }
+      
+      .top-left-logo, .top-right-logo { 
+        width: calc(50% - 16px) !important;
+        max-width: 200px !important;
+        height: auto !important;
+        top: 8px !important;
+        z-index: 9998;
+      }
+      
+      .top-left-logo {
+        left: 8px !important;
+      }
+      
+      .top-right-logo {
+        right: 8px !important;
+      }
+      
+      .destination-card {
+        display: none !important;
+      }
+      
+      /* Oculta o ícone WiFi em mobile */
+      #network-status-container {
+        display: none !important;
+      }
+
+      .grid-container {
+        top: 85px !important;
+        bottom: 10px !important;
+        right: 8px !important;
+        left: 8px !important;
+        width: auto !important;
+        height: auto !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+        grid-template-rows: 1.2fr 1.2fr 1.21fr 1fr 0.9fr 0.9fr 0.9fr 0.9fr 0.9fr !important;
+        gap: 6px !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+      }
+      
+      /* Todos os cards com altura igual preenchendo o grid */
+      .grid-item {
+        min-height: 0 !important;
+        height: 100% !important;
+        padding: 4px !important;
+      }
+      
+      /* Cards com pie charts (1-6) precisam de padding menor */
+      #grid-item-1, #grid-item-2, #grid-item-3,
+      #grid-item-4, #grid-item-5, #grid-item-6 {
+        padding: 3px !important;
+      }
+      
+      /* CRÍTICO: Garante que os containers dos pie charts têm dimensões adequadas */
+      .card-chart {
+        min-width: 90px !important;
+        min-height: 90px !important;
+        width: 100% !important;
+        height: 100% !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+      }
+      
+      #grid-item-1, #grid-item-2, #grid-item-3,
+      #grid-item-4, #grid-item-5, #grid-item-6,
+      #grid-item-8, #grid-item-9, #grid-item-11 {
+        grid-column: span 1 !important;
+        min-height: 0 !important;
+      }
+      
+      /* Reposiciona os itens no grid 2x9 */
+      #grid-item-1 { grid-column: 1; grid-row: 1; }
+      #grid-item-2 { grid-column: 2; grid-row: 1; }
+      #grid-item-3 { display: none !important; }
+      #grid-item-4 { grid-column: 1; grid-row: 2; }
+      #grid-item-5 { grid-column: 2; grid-row: 2; }
+      #grid-item-6 { display: none !important; }
+      #grid-item-7 { grid-column: 1 / -1 !important; grid-row: 3; min-height: 0 !important; }
+      #grid-item-9 { grid-column: 1; grid-row: 4; }
+      #grid-item-11 { grid-column: 2; grid-row: 4; }
+      
+      /* --- BOTTOM SECTION ocupa as últimas 5 linhas --- */
+      .bottom-section { 
+          display: grid !important;
+          grid-column: 1 / -1 !important;
+          grid-row: 5 / 10 !important;
+          grid-template-columns: repeat(2, 1fr) !important;
+          grid-template-rows: 1fr 1fr auto auto 1fr !important;
+          gap: 6px !important;
+          height: 100% !important;
+          min-height: 0 !important;
+          max-height: none !important;
+      }
+      
+      /* Posiciona os 5 cards do bottom section */
+      .info-panel-card-2 { grid-column: 1; grid-row: 1 / 3; }
+      .info-panel-card-1 { grid-column: 2; grid-row: 1 / 3; }
+      .info-panel-card-5 { grid-column: 1 / -1; grid-row: 3 / 5; }
+      .info-panel-card-3 { grid-column: 1; grid-row: 5; }
+      .info-panel-card-4 { grid-column: 2; grid-row: 5; }
+      
+      /* Ajuste do card PLANEAMENTO no mobile */
+      .info-panel-card-2 .card-title {
+          font-size: 14px !important;
+          padding-left: 6px !important;
+          padding-right: 6px !important;
+          width: 100%;
+          box-sizing: border-box;
+          white-space: nowrap;
+          overflow: visible;
+          line-height: 1.2;
+      }
+      
+      .info-panel-card-2 .info-panel-content-2 {
+          grid-template-columns: 1fr !important;
+          gap: 4px !important;
+          padding: 6px !important;
+      }
+      
+      /* Grid 2x2 no mobile quando houver 3+ slots */
+      .info-panel-content-2.multi-slot {
+          grid-template-columns: repeat(2, 1fr) !important;
+          gap: 3px !important;
+      }
+      
+      .slot-column {
+          font-size: clamp(8px, 2vw, 11px) !important;
+          padding: 3px !important;
+      }
+      
+      /* Ajustes dos outros cards */
+      .card-title {
+          font-size: clamp(10px, 2.5vw, 14px) !important;
+          margin-bottom: 2px !important;
+      }
+      
+      /* Títulos dos cards com charts ainda menores */
+      #grid-item-1 .card-title,
+      #grid-item-2 .card-title,
+      #grid-item-3 .card-title,
+      #grid-item-4 .card-title,
+      #grid-item-5 .card-title,
+      #grid-item-6 .card-title {
+          font-size: clamp(9px, 2.2vw, 12px) !important;
+          margin-bottom: 1px !important;
+      }
+      
+      .info-panel-card-3 .card-title {
+          font-size: clamp(10px, 2.5vw, 14px) !important;
+      }
+      
+      /* Ajuste do indicador no mobile */
+      .status-indicator {
+          width: 5px !important;
+          right: 2px !important;
+      }
+      
+      /* Chart de goal menor */
+      .goal-chart-container {
+          padding: 2px !important;
+      }
+      
+      /* Log operacional com texto menor */
+      .info-panel-content-5 {
+          font-size: clamp(7px, 1.8vw, 10px) !important;
+          padding: 4px !important;
+          gap: 4px !important;
+      }
+      
+      /* Log operacional com altura responsiva ao conteúdo */
+      .info-panel-card-5 {
+          height: auto !important;
+          min-height: fit-content !important;
+      }
+      
+      /* Progress bar fica FORA do grid, no topo */
+      .progress-bar-container {
+        display: none !important;
+      }
+    }
+  </style>
+
+  <script>
+    // Refresh automático a cada 10 minutos
+    const REFRESH_INTERVAL_MS = 10 * 60 * 1000;
+
+    setInterval(() => {
+      location.reload();
+    }, REFRESH_INTERVAL_MS);
+
+    // Monitoramento da coluna Z (GERAL) para refresh automático
+    let lastGeralValue = null;
+    const CHECK_INTERVAL = 30000; // Verifica a cada 30 segundos
+
+    async function checkGeralColumnChange() {
+      try {
+        const url = `https://docs.google.com/spreadsheets/d/1GQUB52a2gKR429bjqJrNkbP5rjR7Z_4v85z9M7_Cr8Y/gviz/tq?tqx=out:json&sheet=PS4`;
+        const response = await fetch(url);
+        
+        if (!response.ok) return;
+        
+        const text = await response.text();
+        const jsonString = text.substring(47, text.length - 2);
+        const json = JSON.parse(jsonString);
+        
+        const cols = json.table.cols;
+        const rows = json.table.rows;
+        
+        // Encontra o índice da coluna GERAL (coluna Z)
+        const geralColIndex = cols.findIndex(col => 
+          (col.label || '').toUpperCase() === 'GERAL'
+        );
+        
+        if (geralColIndex === -1) {
+          console.warn('⚠️ Coluna GERAL não encontrada');
+          return;
+        }
+        
+        // Pega todos os valores da coluna GERAL (exceto cabeçalho)
+        const geralValues = rows
+          .map(row => row.c[geralColIndex]?.v)
+          .filter(val => val !== null && val !== undefined)
+          .join('|'); // Concatena todos os valores
+        
+        // Verifica se houve mudança
+        if (lastGeralValue !== null && lastGeralValue !== geralValues) {
+          console.log('🔄 Coluna GERAL alterada! Fazendo refresh...');
+          location.reload();
+        } else if (lastGeralValue === null) {
+          console.log('📊 Valor inicial da coluna GERAL registrado');
+        }
+        
+        lastGeralValue = geralValues;
+        
+      } catch (error) {
+        console.error('❌ Erro ao verificar coluna GERAL:', error);
+      }
+    }
+
+    // Inicia a verificação periódica
+    setInterval(checkGeralColumnChange, CHECK_INTERVAL);
+    
+    // Primeira verificação após 5 segundos (dá tempo para a página carregar)
+    setTimeout(checkGeralColumnChange, 5000);
+  </script>
+</head>
+
+<body>
+  <img src="https://static.wixstatic.com/media/a6967f_0c98d57376be4290aba002d8ba028a92~mv2.webp" alt="Logo" class="top-left-logo" id="main-logo" />
+  <img src="https://static.wixstatic.com/media/a6967f_806fe8fab41d42888a69ac911bb0a451~mv2.png" alt="Second Logo" class="top-right-logo" />
+  
+  <!-- Network Status Indicator -->
+  <div id="network-status-container">
+    <img id="status-icon-online" class="status-icon" src="https://static.wixstatic.com/media/a6967f_f5c3654000224207a9b1a990b32e1ec2~mv2.png" alt="Online" />
+    <img id="status-icon-offline" class="status-icon" src="https://static.wixstatic.com/media/a6967f_579e5220a23f42ad883c5df1380b1bff~mv2.png" alt="Offline" style="display: none;" />
+  </div>
+
+  <div class="destination-card">
+    <div class="destination-title" id="destination-title">Loading...</div>
+  </div>
+
+  <div class="grid-container">
+    <div class="grid-item" id="grid-item-1">
+      <div class="card-title">CUBA</div>
+      <div class="card-chart"></div>
+    </div>
+    <div class="grid-item" id="grid-item-2">
+      <div class="card-title">INTERIOR</div>
+      <div class="card-chart"></div>
+    </div>
+    <div class="grid-item" id="grid-item-3">
+      <div class="card-title">TESTES</div>
+      <div class="card-chart"></div>
+    </div>
+    <div class="grid-item" id="grid-item-4">
+      <div class="card-title">ENVOLVENTES</div>
+      <div class="card-chart"></div>
+    </div>
+    <div class="grid-item" id="grid-item-5">
+      <div class="card-title">ESTRUTURA</div>
+      <div class="card-chart"></div>
+    </div>
+    <div class="grid-item" id="grid-item-6">
+      <div class="card-title">ÁREA TÉCNICA</div>
+      <div class="card-chart"></div>
+    </div>
+    
+    <div class="grid-item" id="grid-item-9">
+      <div class="card-title">1</div>
+    </div>
+    
+    <!--<div class="grid-item" id="grid-item-11">
+      <video autoplay muted loop>
+        <source src="https://video.wixstatic.com/video/a6967f_862ecb30994e420bb2fa2baf947c1fa8/720p/mp4/file.mp4" type="video/mp4">
+      </video>https://static.wixstatic.com/media/a6967f_65315a0ac33347c393c0ac33b6846aaf~mv2.png
+      https://video.wixstatic.com/video/a6967f_862ecb30994e420bb2fa2baf947c1fa8/720p/mp4/file.mp4"
+    </div>-->
+
+    <!--<div id="grid-item-11" style="border-radius:16px; overflow:hidden;">
+      <img src="https://static.wixstatic.com/media/a6967f_95adc546d37c48439468dc428cc46bf3~mv2.png" 
+          alt="Descrição da imagem"
+          style="width:100%; height:100%; object-fit:cover; display:block;">
+    </div>-->
+
+       <!--<div class="grid-item" id="grid-item-11">
+      <video autoplay muted loop>
+        <source src="https://video.wixstatic.com/video/a6967f_862ecb30994e420bb2fa2baf947c1fa8/720p/mp4/file.mp4" type="video/mp4">
+      </video>
+    </div>-->
+    
+
+
+    <!--<div id="grid-item-11" style="border-radius:16px; overflow:hidden;">
+      <video autoplay muted loop playsinline
+            style="width:100%; height:100%; object-fit:cover; display:block;">
+        <source src="https://video.wixstatic.com/video/a6967f_862ecb30994e420bb2fa2baf947c1fa8/720p/mp4/file.mp4" type="video/mp4">
+      </video>
+    </div>-->
+
+    <div id="grid-item-11" style="border-radius:16px; overflow:hidden;">
+      <img src="https://static.wixstatic.com/media/a6967f_95adc546d37c48439468dc428cc46bf3~mv2.png" 
+          alt="Status"
+          style="width:100%; height:100%; object-fit:cover; display:block;">
+    </div>
+
+
+
+    
+    <div class="grid-item" id="grid-item-7">
+      <div class="card-title">PRIORIDADE ATIVA</div>
+      <div class="card-chart"></div>
+    </div>
+    
+    <div class="grid-item" id="grid-item-8">
+      <div class="card-chart"></div>
+    </div>
+    
+    <div class="bottom-section">
+      <div class="grid-item info-panel-card-2">
+        <div class="card-title">PLANEAMENTO</div>
+        <div class="info-panel-content-2"></div>
+      </div>
+      <div class="grid-item info-panel-card-1">
+        <div class="card-title"></div>
+        <div class="info-panel-content-1"></div>
+      </div>
+      <div class="grid-item info-panel-card-5">
+        <div class="card-title">Log Operacional</div>
+        <div class="info-panel-content-5" style="width: 100%; height: 100%; padding: 8px; box-sizing: border-box; overflow: hidden; font-size: 12px; color: white; text-align: left; display: grid; grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(3, minmax(0, 1fr)); grid-auto-rows: minmax(0, 1fr); gap: 12px; row-gap: 12px; column-gap: 12px; align-items: stretch;"></div>
+      </div>
+      <div class="grid-item info-panel-card-3">
+        <div class="card-title">GOAL</div>
+        <div class="goal-chart-container">
+          <svg class="goal-chart" viewBox="0 0 200 200" preserveAspectRatio="xMidYMid meet">
+            <circle cx="100" cy="100" r="80" fill="none" stroke="rgba(90,108,125,0.3)" stroke-width="20"/>
+            <circle cx="100" cy="100" r="60" fill="none" stroke="rgba(90,108,125,0.3)" stroke-width="15"/>
+            <circle cx="100" cy="100" r="42" fill="none" stroke="rgba(90,108,125,0.3)" stroke-width="8"/>
+            
+                <circle cx="100" cy="100" r="80" fill="none" stroke="#007bff" stroke-width="20" 
+                  stroke-dasharray="188 189" stroke-dashoffset="0" 
+                  stroke-linecap="round" transform="rotate(-90 100 100)"/>
+
+                <circle cx="100" cy="100" r="60" fill="none" stroke="#00a2e8" stroke-width="15" 
+                  stroke-dasharray="113 170" stroke-dashoffset="0" 
+                  stroke-linecap="round" transform="rotate(-90 100 100)"/>
+
+                <circle cx="100" cy="100" r="42" fill="none" stroke="#80a5dc" stroke-width="8" 
+                  stroke-dasharray="60 138" stroke-dashoffset="0" 
+                  stroke-linecap="round" transform="rotate(-90 100 100)"/>
+          </svg>
+        </div>
+      </div>
+      <div class="grid-item info-panel-card-4">
+        <div class="info-panel-image-container">
+          <img id="status-indicator" src="" alt="Status" class="info-panel-image" />
+        </div>
+      </div>
+    </div>
+    
+    <!-- Progress bars criadas dinamicamente baseadas no número de slots -->
+    <div class="progress-bar-container"></div>
+
+  </div> <div class="app-wrapper">
+    <ul class="markers"></ul>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/106/three.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/stats.js/r16/Stats.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.6/dat.gui.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/17.4.0/Tween.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/3.3.2/fabric.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/chroma-js/2.0.4/chroma.min.js"></script>
+  <script src="libs/THREE.MeshLine.js"></script>
+  <script src="https://d3js.org/d3-array.v1.min.js"></script>
+  <script src="https://d3js.org/d3-geo.v1.min.js"></script>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+
+  <script src="libs/orbit-controls.js"></script>
+  <script src="libs/trackball-controls.js"></script>
+  <script src="libs/perlin-noise.js"></script>
+
+  <script src="assets/data/processing.js"></script>
+
+  <script src="scripts/config.js?v=20251125"></script>
+  <script src="scripts/app.js?v=20251125"></script>
+  <script src="scripts/shaders.js?v=20251125"></script>
+  <script src="scripts/charts.js?v=20251125"></script>
+  
+  <!-- Google Sheets data loader -->
+  <script src="assets/data/googleSheets.js"></script>
+  
+  <script src="scripts/index.js?v=20251125"></script>
+
+  <script src="assets/data/countries.js"></script>
+  <script src="assets/data/connections.js"></script>
+  <script src="assets/data/grid.js"></script>
+
+  <script src="scripts/globe.js?v=20251125"></script>
+  <script src="scripts/points.js?v=20251125"></script>
+  <script src="scripts/marker.js?v=20251125"></script>
+  <script src="scripts/markers.js?v=20251125"></script>
+  <script src="scripts/lines.js?v=20251125"></script>
+  <script src="scripts/dots.js?v=20251125"></script>
+  <script src="scripts/camera.js?v=20251125"></script>
+
+  <script src="scripts/utils.js?v=20251125"></script>
+  
+  <!-- Network Status Monitor -->
+  <script src="scripts/network-status.js?v=20251125"></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      initializeBottomSectionAutoFont();
+
+      function initializeBottomSectionAutoFont() {
+        const bottomSection = document.querySelector('.bottom-section');
+        if (!bottomSection) return;
+
+        const MIN_FONT_SIZE_PX = 7;
+        const selectors = [
+          '.card-title',
+          '.info-line',
+          '.buffer-item',
+          '.info-panel-content-5 > div'
+        ];
+
+        const getElementsToFit = () => {
+          return Array.from(bottomSection.querySelectorAll(selectors.join(','))).filter((el) => {
+            return el.textContent && el.textContent.trim().length > 0;
+          });
+        };
+
+        const fitElementText = (element) => {
+          const computedFontSize = parseFloat(window.getComputedStyle(element).fontSize);
+          const baseFontSize = parseFloat(element.dataset.baseFontSize || computedFontSize);
+          if (!element.dataset.baseFontSize) {
+            element.dataset.baseFontSize = String(baseFontSize);
+          }
+
+          let currentFontSize = baseFontSize;
+          element.style.fontSize = `${currentFontSize}px`;
+          element.style.whiteSpace = 'normal';
+          element.style.overflowWrap = 'anywhere';
+          element.style.wordBreak = 'break-word';
+
+          while (
+            (element.scrollWidth > element.clientWidth || element.scrollHeight > element.clientHeight) &&
+            currentFontSize > MIN_FONT_SIZE_PX
+          ) {
+            currentFontSize -= 0.5;
+            element.style.fontSize = `${currentFontSize}px`;
+          }
+        };
+
+        let rafId = null;
+        const fitAllText = () => {
+          if (rafId) cancelAnimationFrame(rafId);
+          rafId = requestAnimationFrame(() => {
+            getElementsToFit().forEach(fitElementText);
+            rafId = null;
+          });
+        };
+
+        const observer = new MutationObserver(fitAllText);
+        observer.observe(bottomSection, {
+          childList: true,
+          subtree: true,
+          characterData: true
+        });
+
+        window.addEventListener('resize', fitAllText);
+        fitAllText();
+      }
+    });
+  </script>
+
+</body>
+</html>
