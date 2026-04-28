@@ -224,3 +224,101 @@ async function loadSheetValue(config = {}) {
   }
   return getValueFromRow(cached.row, targetIndex);
 }
+
+/**
+ * Calcula dias úteis (segunda a sexta) entre duas datas em Portugal
+ * @param {Date|String|Number} startDate - Data inicial
+ * @param {Date|String|Number} endDate - Data final
+ * @param {Boolean} includeStartDay - Se inclui o primeiro dia (padrão: true)
+ * @param {Number} year - Ano para determinar feriados (padrão: ano da startDate)
+ * @returns {Number} Número de dias úteis
+ */
+function getWorkDaysCount(startDate, endDate, includeStartDay = true, year = null) {
+  const start = parseSheetDate(startDate);
+  const end = parseSheetDate(endDate);
+  
+  if (!start || !end) {
+    return null;
+  }
+
+  // Feriados nacionais em Portugal (formato: MM-DD)
+  const ptHolidays = [
+    '01-01', // Ano Novo
+    '04-25', // Dia da Liberdade
+    '05-01', // Dia do Trabalho
+    '06-10', // Dia de Portugal
+    '08-15', // Assunção
+    '10-05', // Proclamação da República
+    '11-01', // Dia de Todos os Santos
+    '12-01', // Restauração da Independência
+    '12-25', // Natal
+  ];
+
+  // Feriados móveis para 2026
+  const mobileHolidays2026 = [
+    '02-17', // Terça de Carnaval
+    '04-17', // Sexta-feira Santa
+  ];
+
+  const year4Start = start.getFullYear();
+  if (year === year4Start) {
+    ptHolidays.push(...mobileHolidays2026);
+  }
+
+  const isHoliday = (date) => {
+    const monthDay = String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0');
+    return ptHolidays.includes(monthDay);
+  };
+
+  const isWorkDay = (date) => {
+    const dayOfWeek = date.getDay();
+    // 0 = domingo, 1 = segunda, ..., 5 = sexta, 6 = sábado
+    return dayOfWeek >= 1 && dayOfWeek <= 5 && !isHoliday(date);
+  };
+
+  let count = 0;
+  const current = new Date(start);
+  current.setHours(0, 0, 0, 0);
+  end.setHours(0, 0, 0, 0);
+
+  // Ajestar se não inclui o dia de início
+  if (!includeStartDay) {
+    current.setDate(current.getDate() + 1);
+  }
+
+  while (current <= end) {
+    if (isWorkDay(current)) {
+      count++;
+    }
+    current.setDate(current.getDate() + 1);
+  }
+
+  return count;
+}
+
+/**
+ * Retorna informações de prazo com dias úteis
+ * @param {Date|String|Number} startDate - Data de início
+ * @param {Date|String|Number} dueDate - Data prevista
+ * @param {Date|String|Number} todayDate - Data atual (padrão: hoje)
+ * @returns {Object} { totalWorkDays, remainingWorkDays, percentage }
+ */
+function getDeadlineInfo(startDate, dueDate, todayDate = new Date()) {
+  const start = parseSheetDate(startDate);
+  const due = parseSheetDate(dueDate);
+  const today = parseSheetDate(todayDate);
+  
+  if (!start || !due || !today) {
+    return null;
+  }
+
+  const totalWorkDays = getWorkDaysCount(start, due, true, start.getFullYear());
+  const remainingWorkDays = getWorkDaysCount(today, due, false, today.getFullYear());
+  
+  return {
+    totalWorkDays,
+    remainingWorkDays,
+    daysElapsed: totalWorkDays - remainingWorkDays,
+    percentage: totalWorkDays > 0 ? Math.round(((totalWorkDays - remainingWorkDays) / totalWorkDays) * 100) : 0
+  };
+}

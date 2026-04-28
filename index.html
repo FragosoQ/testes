@@ -919,13 +919,13 @@ Promise.all([
     dataInicio = dataInicioBruta;
     dataPrevista = dataPrevistiaBruta;
 
-    // Calcular dias
+    // Calcular dias úteis (segunda a sexta) considerando feriados em Portugal
     const hoje = new Date();
     hoje.setHours(0, 0, 0, 0);
 
-    diasTotal = getDaysDiff(dataInicio, dataPrevista) || 8;
-    diasUsados = getDaysDiff(dataInicio, hoje) || 6;
-    folga = getDaysDiff(hoje, dataPrevista) || 2;
+    diasTotal = getWorkDaysCount(dataInicio, dataPrevista, true) || 8;
+    diasUsados = getWorkDaysCount(dataInicio, hoje, true) || 6;
+    folga = getWorkDaysCount(hoje, dataPrevista, false) || 2;
 
     // Garantir valores não-negativos
     diasUsados = Math.max(0, diasUsados);
