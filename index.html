@@ -1188,8 +1188,9 @@ updateTime(); setInterval(updateTime, 1000);
     return ring;
   }
 
-  const ptRing   = addMarker(38.7, -9.1,   0xffffff);
-  const peruRing = addMarker(-9.2, -75.0,  0x00ff87);
+  // Marcadores iniciais (Portugal como padrão)
+  let ptRing = addMarker(38.7, -9.1, 0xffffff);
+  let destRing = addMarker(-9.2, -75.0, 0x00ff87); // Peru como padrão inicial
 
   // ── ARC ──
   function makeArc(latA, lonA, latB, lonB) {
@@ -1203,9 +1204,10 @@ updateTime(); setInterval(updateTime, 1000);
     return { line: new THREE.Line(geo, mat), pts };
   }
 
-  const arc = makeArc(38.7, -9.1, -9.2, -75.0);
+  let arc = makeArc(38.7, -9.1, -9.2, -75.0); // Arco inicial Portugal -> Peru
   globeGroup.add(arc.line);
 
+  // ── TRAVEL DOT ──
   const travDot = new THREE.Mesh(
     new THREE.SphereGeometry(2.8, 8, 8),
     new THREE.MeshBasicMaterial({ color: 0x00aaff })
@@ -1223,6 +1225,35 @@ updateTime(); setInterval(updateTime, 1000);
     new THREE.MeshBasicMaterial({ color: 0x0044cc, transparent: true, opacity: 0.1, blending: THREE.AdditiveBlending, depthWrite: false })
   );
   travDot.add(travGlow2);
+
+  // Função para atualizar marcadores e arco baseado no país de destino
+  function updateGlobeDestination(countryName) {
+    const destCoords = getCountryCoordinates(countryName);
+    
+    // Remover marcadores e arco antigos
+    globeGroup.remove(destRing);
+    globeGroup.remove(arc.line);
+    
+    // Criar novo marcador de destino
+    destRing = addMarker(destCoords.lat, destCoords.lon, 0x00ff87);
+    
+    // Criar novo arco
+    arc = makeArc(38.7, -9.1, destCoords.lat, destCoords.lon);
+    globeGroup.add(arc.line);
+  }
+
+  // Carregar país dinamicamente e atualizar globo
+  loadSheetValue({ targetHeader: 'PAÍS', targetColumn: 'L' })
+    .then(countryValue => {
+      if (countryValue && String(countryValue).trim().length > 0) {
+        const country = String(countryValue).trim();
+        updateGlobeDestination(country);
+      }
+    })
+    .catch(err => {
+      console.warn('Sheet país load failed for globe:', err);
+      // Mantém configuração padrão (Portugal -> Peru)
+    });
 
   globeGroup.rotation.y = THREE.MathUtils.degToRad(-(180 - 9.1));
   globeGroup.rotation.x = THREE.MathUtils.degToRad(20);
@@ -1250,7 +1281,7 @@ updateTime(); setInterval(updateTime, 1000);
 
     const p = 0.88 + 0.18 * Math.sin(t * 3);
     ptRing.scale.set(p, p, 1);
-    peruRing.scale.set(p, p, 1);
+    destRing.scale.set(p, p, 1);
 
     if (!isRotating) globeGroup.rotation.y -= 0.0015;
 

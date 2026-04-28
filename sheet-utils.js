@@ -414,3 +414,82 @@ function getCountryFlag(countryName) {
 
   return flag;
 }
+
+/**
+ * Retorna as coordenadas geográficas (latitude, longitude) de um país
+ * @param {String} countryName - Nome do país
+ * @returns {Object} {lat, lon} ou coordenadas de Portugal como fallback
+ */
+function getCountryCoordinates(countryName) {
+  if (!countryName || typeof countryName !== 'string') {
+    return { lat: 38.7, lon: -9.1 }; // Portugal como fallback
+  }
+
+  const country = countryName.trim().toLowerCase();
+
+  // Mapeamento de países para coordenadas [latitude, longitude]
+  const coordinatesMap = {
+    'portugal': { lat: 38.7, lon: -9.1 },
+    'portuguesa': { lat: 38.7, lon: -9.1 },
+    'espanha': { lat: 40.4, lon: -3.7 },
+    'spain': { lat: 40.4, lon: -3.7 },
+    'frança': { lat: 48.9, lon: 2.4 },
+    'france': { lat: 48.9, lon: 2.4 },
+    'itália': { lat: 41.9, lon: 12.5 },
+    'italy': { lat: 41.9, lon: 12.5 },
+    'alemanha': { lat: 52.5, lon: 13.4 },
+    'germany': { lat: 52.5, lon: 13.4 },
+    'reino unido': { lat: 51.5, lon: -0.1 },
+    'united kingdom': { lat: 51.5, lon: -0.1 },
+    'uk': { lat: 51.5, lon: -0.1 },
+    'estados unidos': { lat: 38.9, lon: -77.0 },
+    'united states': { lat: 38.9, lon: -77.0 },
+    'usa': { lat: 38.9, lon: -77.0 },
+    'brasil': { lat: -15.8, lon: -47.9 },
+    'brazil': { lat: -15.8, lon: -47.9 },
+    'méxico': { lat: 19.4, lon: -99.1 },
+    'mexico': { lat: 19.4, lon: -99.1 },
+    'peru': { lat: -9.2, lon: -75.0 },
+    'perú': { lat: -9.2, lon: -75.0 },
+    'chile': { lat: -33.4, lon: -70.7 },
+    'colômbia': { lat: 4.7, lon: -74.1 },
+    'colombia': { lat: 4.7, lon: -74.1 },
+    'argentina': { lat: -34.6, lon: -58.4 },
+    'equador': { lat: -0.2, lon: -78.5 },
+    'ecuador': { lat: -0.2, lon: -78.5 },
+    'uruguai': { lat: -34.9, lon: -56.2 },
+    'uruguay': { lat: -34.9, lon: -56.2 },
+    'paraguai': { lat: -25.3, lon: -57.6 },
+    'paraguay': { lat: -25.3, lon: -57.6 },
+    'venezuela': { lat: 10.5, lon: -66.9 },
+    'bolívia': { lat: -16.5, lon: -68.1 },
+    'bolivia': { lat: -16.5, lon: -68.1 },
+    'panamá': { lat: 8.98, lon: -79.5 },
+    'panama': { lat: 8.98, lon: -79.5 },
+    'costa rica': { lat: 9.93, lon: -84.1 },
+    'costa-rica': { lat: 9.93, lon: -84.1 },
+    'nicarágua': { lat: 12.1, lon: -86.3 },
+    'nicaragua': { lat: 12.1, lon: -86.3 },
+    'honduras': { lat: 14.1, lon: -87.2 },
+    'el salvador': { lat: 13.7, lon: -89.2 },
+    'elsalvador': { lat: 13.7, lon: -89.2 },
+    'guatemala': { lat: 14.6, lon: -90.5 },
+    'belize': { lat: 17.3, lon: -88.8 },
+    'andorra': { lat: 42.5, lon: 1.5 },
+    'angola': { lat: -8.8, lon: 13.2 },
+    'moçambique': { lat: -25.9, lon: 32.6 },
+    'mozambique': { lat: -25.9, lon: 32.6 },
+    'cabo verde': { lat: 14.9, lon: -23.5 },
+    'caboverde': { lat: 14.9, lon: -23.5 },
+    'guiné-bissau': { lat: 11.9, lon: -15.6 },
+    'guine-bissau': { lat: 11.9, lon: -15.6 },
+    'são tomé e príncipe': { lat: 0.3, lon: 6.7 },
+    'sao tome e principe': { lat: 0.3, lon: 6.7 },
+    'timor-leste': { lat: -8.6, lon: 125.6 },
+    'timor leste': { lat: -8.6, lon: 125.6 },
+    'macau': { lat: 22.2, lon: 113.5 },
+    'macao': { lat: 22.2, lon: 113.5 }
+  };
+
+  return coordinatesMap[country] || { lat: 38.7, lon: -9.1 }; // Portugal como fallback
+}
