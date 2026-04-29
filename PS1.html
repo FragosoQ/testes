@@ -1770,8 +1770,8 @@ const statusEl = document.getElementById('statusLabel');
 const zg = document.getElementById('zonasGrid');
 
 const ZONA_CONFIGS = [
-  { nome: 'Cuba', header: 'CUBA', column: 'AA' },
-  { nome: 'Estrutura', header: 'ESTRUTURA', column: 'AB' },
+  { nome: 'Cuba', tab: 'PS1', header: 'CUBA', column: 'O' },
+  { nome: 'Estrutura', tab: 'PS1', header: 'ESTRUTURA', column: 'P' },
   {
     nome: 'Planeamento',
     type: 'list',
@@ -1796,8 +1796,8 @@ const ZONA_CONFIGS = [
       limit: 50,
     },
   },
-  { nome: 'Envolventes', header: 'ENVOLVENTES', column: 'AD' },
-  { nome: 'Interior', header: 'INTERIOR', column: 'AC' },
+  { nome: 'Envolventes', tab: 'PS1', header: 'Envolventes', column: 'R' },
+  { nome: 'Interior', tab: 'PS1', header: 'INTERIOR', column: 'Q' },
   {
     nome: 'Próxima Prioridade',
     type: 'single',
@@ -1970,7 +1970,15 @@ async function fetchZonaListValues(source) {
 }
 
 function buildZonaPctCard(config, rowData) {
-  const raw = getFieldValue(rowData, config.header, config.column, 0);
+  // Suporta dois modos:
+  //   1) rowData é a linha completa do PM1 → vai buscar via getFieldValue
+  //   2) rowData = { __raw: valor } → usa o valor directamente (cards lidos de separadores externos)
+  let raw;
+  if (rowData && Object.prototype.hasOwnProperty.call(rowData, '__raw')) {
+    raw = rowData.__raw;
+  } else {
+    raw = getFieldValue(rowData, config.header, config.column, 0);
+  }
   const pct = parseSheetPercentage(raw) || 0;
   const cls = pct === 100 ? 'done' : pct > 0 ? 'going' : 'empty';
   const col = bc(pct);
@@ -2052,6 +2060,22 @@ function renderZones(rowData) {
         const fresh = buildZonaSingleCard(config, v);
         card.replaceWith(fresh);
       }).catch(err => console.warn(`Falha a carregar valor para "${config.nome}":`, err));
+    } else if (config.tab) {
+      // Card percentual lido de um separador específico (ex: PS1)
+      const cacheKey = `pct|${config.tab}|${config.column || config.header}`;
+      const cached = ZONA_LIST_CACHE[cacheKey];
+      // Render imediato com o que está em cache (evita pisca)
+      const card = buildZonaPctCard(config, cached != null ? { __raw: cached } : null);
+      zg.appendChild(card);
+
+      fetchSecondaryRowFields(config.tab, {
+        v: { header: config.header, column: config.column },
+      }).then(({ v }) => {
+        ZONA_LIST_CACHE[cacheKey] = v;
+        // Constrói card fresco com o valor recebido
+        const fresh = buildZonaPctCard(config, { __raw: v });
+        card.replaceWith(fresh);
+      }).catch(err => console.warn(`Falha a carregar pct para "${config.nome}":`, err));
     } else {
       zg.appendChild(buildZonaPctCard(config, rowData));
     }
@@ -2127,20 +2151,17 @@ function updateDeadline(startValue, dueValue) {
   }
 }
 
-function updateStatus(rowData) {
-  const statusValue = getFieldValue(rowData, null, 'A', null);
+function updateStatus(chaveValue) {
   if (!statusEl) return;
-  const statusText = statusValue && String(statusValue).trim().length > 0 ? 'Em Curso · ON' : 'standby';
-  statusEl.textContent = statusText.toUpperCase();
+  const hasValue = chaveValue != null && String(chaveValue).trim().length > 0;
+  statusEl.textContent = hasValue ? 'EM CURSO · ON' : 'STANDBY';
 }
 
 function renderSheetData(sheetRow) {
   if (!sheetRow) return;
 
-  const evRaw = getFieldValue(sheetRow, 'EVOLUÇÃO', 'Y', FALLBACK_EV);
-  updateEvolucao(parseSheetPercentage(evRaw));
-
   // Modelo e Lote vêm do PS1!D (mais abaixo, no fetch ao PS1)
+  // Evolução Global vem do PS1!AK (também no fetch ao PS1)
 
   // Helper: aplicar estado "vazio" (volta ao layout single com placeholder)
   function setPaisEmpty() {
@@ -2249,7 +2270,9 @@ function renderSheetData(sheetRow) {
     previsto: { header: 'DATA PRETENDIDA', column: 'F' },
     modeloLote: { header: 'D', column: 'D' },
     prioridadeAtiva: { header: 'Posto 1', column: 'CI' },
-  }).then(({ inicio, previsto, modeloLote, prioridadeAtiva }) => {
+    geral: { header: 'GERAL', column: 'AK' },
+    chaveProcura: { header: 'Chave de Procura', column: 'A' },
+  }).then(({ inicio, previsto, modeloLote, prioridadeAtiva, geral, chaveProcura }) => {
     const inicioFmt = inicio != null && String(inicio).trim() !== ''
       ? formatSheetDate(inicio) || DATE_PLACEHOLDER
       : DATE_PLACEHOLDER;
@@ -2269,6 +2292,14 @@ function renderSheetData(sheetRow) {
     }
 
     setPrioridadeAtiva(prioridadeAtiva);
+    updateStatus(chaveProcura);
+    const geralPct = parseSheetPercentage(geral);
+    if (geralPct == null) {
+      console.warn('[evolução] valor de GERAL (PS1!AK2) não parseável:', geral);
+    } else {
+      console.log('[evolução] GERAL (PS1!AK2) =', geral, '→', geralPct, '%');
+    }
+    updateEvolucao(geralPct != null ? geralPct : 0);
   }).catch(err => {
     console.warn('Falha a carregar dados do PS1:', err);
     renderText(dataInicioEl, DATE_PLACEHOLDER, DATE_PLACEHOLDER);
@@ -2279,9 +2310,10 @@ function renderSheetData(sheetRow) {
       loteEl.innerHTML = 'Sem Lote';
     }
     setPrioridadeAtiva(null);
+    updateStatus(null);
+    updateEvolucao(0);
   });
 
-  updateStatus(sheetRow);
   renderZones(sheetRow);
 }
 
