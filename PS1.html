@@ -2673,8 +2673,7 @@ updateTime(); setInterval(updateTime, 1000);
     t += 0.008;
 
     const p = 0.88 + 0.18 * Math.sin(t * 3);
-    // Pulsar o pin 3D (escala base 1, geometria já tem dimensões reais)
-    ptRing.scale.set(p, p, p);
+    // Pin de Portugal (3D) sem animação — só os marcadores de destino pulsam
     destRings.forEach(r => r.scale.set(p, p, 1));
 
     if (!isRotating) globeGroup.rotation.y -= 0.0015;
