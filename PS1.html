@@ -313,8 +313,8 @@ main {
 /* Modo grid 2x2 quando há mais do que um país */
 .id-pais.is-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: clamp(6px, 1vh, 12px) clamp(14px, 2vw, 28px);
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: clamp(6px, 1vh, 12px) clamp(10px, 1.4vw, 20px);
   align-items: center;
 }
 .id-pais-cell {
@@ -2202,7 +2202,7 @@ function updateStatus(chaveValue) {
   statusEl.textContent = hasValue ? 'EM CURSO · ON' : 'STANDBY';
 }
 
-/* ── PAÍSES (montagemEditável!L2:M6) ── */
+/* ── PAÍSES (montagemEditável!L2:M5) ── */
 const PAIS_PLACEHOLDER = '- · -';
 
 function setPaisEmpty() {
@@ -2226,7 +2226,7 @@ function setPaisSingle(pais, idioma) {
 function setPaisGrid(pares) {
   if (!paisContainerEl) return;
   paisContainerEl.classList.add('is-grid');
-  paisContainerEl.innerHTML = pares.slice(0, 4).map(p => {
+  paisContainerEl.innerHTML = pares.map(p => {
     const flag = getCountryFlag(p.pais) || '';
     const idiomaTxt = p.idioma ? p.idioma.toUpperCase() : '—';
     return `
@@ -2241,7 +2241,7 @@ function loadAndRenderPaises() {
   return fetchSecondaryRowsRange('montagemEditável', {
     pais: { header: 'PAÍS', column: 'L' },
     idioma: { header: 'IDIOMA', column: 'M' },
-  }, 2, 6).then(rows => {
+  }, 2, 5).then(rows => {
     const valid = rows
       .map(r => ({
         pais: r.pais != null ? String(r.pais).trim() : '',
