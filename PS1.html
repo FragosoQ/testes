@@ -1191,6 +1191,51 @@ function rowValuesSnapshot(rowData) {
   return JSON.stringify(entries);
 }
 
+// Watcher genérico de um separador inteiro: re-fetcha periodicamente e chama
+// onChange sempre que o conteúdo da tabela mudar (snapshot por hash das células).
+function watchSheetTab(config = {}, onChange, intervalMs = 20000) {
+  const cfg = Object.assign({}, SHEET_CONFIG_DEFAULT, config);
+  let lastSnapshot = null;
+  let stopped = false;
+
+  function tableSnapshot(table) {
+    if (!table || !Array.isArray(table.rows)) return '';
+    // Concatena valores brutos de todas as linhas/colunas
+    const parts = [];
+    for (let i = 0; i < table.rows.length; i += 1) {
+      const row = table.rows[i];
+      if (!row || !Array.isArray(row.c)) { parts.push(''); continue; }
+      for (let j = 0; j < row.c.length; j += 1) {
+        const cell = row.c[j];
+        parts.push(cell ? (cell.v != null ? String(cell.v) : (cell.f != null ? String(cell.f) : '')) : '');
+      }
+      parts.push('|');
+    }
+    return parts.join(',');
+  }
+
+  async function check() {
+    if (stopped) return;
+    try {
+      const table = await fetchSheetTable(cfg);
+      const snapshot = tableSnapshot(table);
+      if (snapshot !== lastSnapshot) {
+        lastSnapshot = snapshot;
+        onChange();
+      }
+    } catch (error) {
+      console.warn(`Sheet watch error (${cfg.tab}):`, error);
+    }
+  }
+
+  check();
+  const intervalId = setInterval(check, intervalMs);
+  return () => {
+    stopped = true;
+    clearInterval(intervalId);
+  };
+}
+
 function watchSheetRow(config = {}, onChange, intervalMs = 20000) {
   let lastSnapshot = null;
   let stopped = false;
@@ -1744,7 +1789,9 @@ const bc = v => v === 100 ? '#00ff87' : v > 0 ? '#00d4ff' : null;
 
 /* ── CONFIGURAÇÃO DE SHEET ── */
 const SHEET_POLL_INTERVAL = 20000;
-const SHEET_CONFIG = { id: '1GQUB52a2gKR429bjqJrNkbP5rjR7Z_4v85z9M7_Cr8Y', tab: 'PM1' };
+// PS1 é a fonte primária (watcher detecta mudanças neste separador).
+// O renderSheetData re-fetch ao PS1 e a outros separadores via fetchSecondaryRowFields.
+const SHEET_CONFIG = { id: '1GQUB52a2gKR429bjqJrNkbP5rjR7Z_4v85z9M7_Cr8Y', tab: 'PS1' };
 
 const FALLBACK_EV = 46;
 const evEl = document.getElementById('evNum');
@@ -1756,8 +1803,6 @@ const paisInfoEl = document.querySelector('.id-pais-info');
 const PAIS_INFO_FALLBACK = paisInfoEl ? paisInfoEl.textContent.trim() : 'Peru · EN';
 const flagEl = document.querySelector('.id-flag');
 const paisContainerEl = document.querySelector('.id-pais');
-const operadorEl = document.querySelector('.f-op');
-const OPERADOR_FALLBACK = operadorEl ? operadorEl.textContent.trim() : 'Richard · Diogo';
 const dataInicioEl = document.querySelectorAll('.d-v')[0];
 const DATA_INICIO_FALLBACK = dataInicioEl ? dataInicioEl.textContent.trim() : '14 / 04 / 2026';
 const dataPrevistaEl = document.querySelectorAll('.d-v')[1];
@@ -2157,50 +2202,43 @@ function updateStatus(chaveValue) {
   statusEl.textContent = hasValue ? 'EM CURSO · ON' : 'STANDBY';
 }
 
-function renderSheetData(sheetRow) {
-  if (!sheetRow) return;
+/* ── PAÍSES (montagemEditável!L2:M6) ── */
+const PAIS_PLACEHOLDER = '- · -';
 
-  // Modelo e Lote vêm do PS1!D (mais abaixo, no fetch ao PS1)
-  // Evolução Global vem do PS1!AK (também no fetch ao PS1)
+function setPaisEmpty() {
+  if (!paisContainerEl) return;
+  paisContainerEl.classList.remove('is-grid');
+  paisContainerEl.innerHTML = `
+    <span class="id-flag"></span>
+    <span class="id-pais-info">${PAIS_PLACEHOLDER}</span>`;
+}
 
-  // Helper: aplicar estado "vazio" (volta ao layout single com placeholder)
-  function setPaisEmpty() {
-    if (!paisContainerEl) return;
-    paisContainerEl.classList.remove('is-grid');
-    paisContainerEl.innerHTML = `
-      <span class="id-flag"></span>
-      <span class="id-pais-info">${PAIS_PLACEHOLDER}</span>`;
-  }
+function setPaisSingle(pais, idioma) {
+  if (!paisContainerEl) return;
+  paisContainerEl.classList.remove('is-grid');
+  const flag = getCountryFlag(pais) || '';
+  const idiomaTxt = idioma ? idioma.toUpperCase() : '—';
+  paisContainerEl.innerHTML = `
+    <span class="id-flag">${escapeHtml(flag)}</span>
+    <span class="id-pais-info">${escapeHtml(pais.toUpperCase())} · ${escapeHtml(idiomaTxt)}</span>`;
+}
 
-  // Helper: aplicar estado "single" (1 par país/idioma)
-  function setPaisSingle(pais, idioma) {
-    if (!paisContainerEl) return;
-    paisContainerEl.classList.remove('is-grid');
-    const flag = getCountryFlag(pais) || '';
-    const idiomaTxt = idioma ? idioma.toUpperCase() : '—';
-    paisContainerEl.innerHTML = `
-      <span class="id-flag">${escapeHtml(flag)}</span>
-      <span class="id-pais-info">${escapeHtml(pais.toUpperCase())} · ${escapeHtml(idiomaTxt)}</span>`;
-  }
+function setPaisGrid(pares) {
+  if (!paisContainerEl) return;
+  paisContainerEl.classList.add('is-grid');
+  paisContainerEl.innerHTML = pares.slice(0, 4).map(p => {
+    const flag = getCountryFlag(p.pais) || '';
+    const idiomaTxt = p.idioma ? p.idioma.toUpperCase() : '—';
+    return `
+      <div class="id-pais-cell">
+        <span class="id-flag">${escapeHtml(flag)}</span>
+        <span class="id-pais-info">${escapeHtml(p.pais.toUpperCase())} · ${escapeHtml(idiomaTxt)}</span>
+      </div>`;
+  }).join('');
+}
 
-  // Helper: aplicar estado "grid 2x2"
-  function setPaisGrid(pares) {
-    if (!paisContainerEl) return;
-    paisContainerEl.classList.add('is-grid');
-    paisContainerEl.innerHTML = pares.slice(0, 4).map(p => {
-      const flag = getCountryFlag(p.pais) || '';
-      const idiomaTxt = p.idioma ? p.idioma.toUpperCase() : '—';
-      return `
-        <div class="id-pais-cell">
-          <span class="id-flag">${escapeHtml(flag)}</span>
-          <span class="id-pais-info">${escapeHtml(p.pais.toUpperCase())} · ${escapeHtml(idiomaTxt)}</span>
-        </div>`;
-    }).join('');
-  }
-
-  // País + Idioma vêm de montagemEditável!L2:L6 e M2:M6 (várias entradas)
-  const PAIS_PLACEHOLDER = '- · -';
-  fetchSecondaryRowsRange('montagemEditável', {
+function loadAndRenderPaises() {
+  return fetchSecondaryRowsRange('montagemEditável', {
     pais: { header: 'PAÍS', column: 'L' },
     idioma: { header: 'IDIOMA', column: 'M' },
   }, 2, 6).then(rows => {
@@ -2213,6 +2251,9 @@ function renderSheetData(sheetRow) {
 
     if (valid.length === 0) {
       setPaisEmpty();
+      if (typeof updateGlobeDestinations === 'function') {
+        updateGlobeDestinations([]);
+      }
       return;
     }
 
@@ -2236,8 +2277,15 @@ function renderSheetData(sheetRow) {
       updateGlobeDestinations([]);
     }
   });
+}
 
-  renderText(operadorEl, getFieldValue(sheetRow, 'OPERADOR', 'AH', OPERADOR_FALLBACK), OPERADOR_FALLBACK);
+function renderSheetData(sheetRow) {
+  if (!sheetRow) return;
+
+  // Modelo e Lote vêm do PS1!D (mais abaixo, no fetch ao PS1)
+  // Evolução Global vem do PS1!AK (também no fetch ao PS1)
+  // Países vêm de montagemEditável (refrescados pelo seu próprio watcher — ver loadAndRenderPaises)
+  loadAndRenderPaises();
 
   // Datas + Modelo/Lote vindos do PS1
   const DATE_PLACEHOLDER = '-- / -- / ----';
@@ -2318,8 +2366,20 @@ function renderSheetData(sheetRow) {
 }
 
 function initializeSheetWatcher() {
-  const stop = watchSheetRow(SHEET_CONFIG, renderSheetData, SHEET_POLL_INTERVAL);
-  window.addEventListener('beforeunload', stop);
+  // Watcher principal: PS1 (fonte primária — ao mudar dispara re-render completo)
+  const stopPs1 = watchSheetRow(SHEET_CONFIG, renderSheetData, SHEET_POLL_INTERVAL);
+
+  // Watcher dedicado: montagemEditável (países) — dispara só re-render do bloco país
+  const stopPaises = watchSheetTab(
+    { tab: 'montagemEditável' },
+    () => loadAndRenderPaises(),
+    SHEET_POLL_INTERVAL
+  );
+
+  window.addEventListener('beforeunload', () => {
+    stopPs1();
+    stopPaises();
+  });
 }
 
 initializeSheetWatcher();
