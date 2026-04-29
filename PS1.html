@@ -2385,6 +2385,16 @@ updateTime(); setInterval(updateTime, 1000);
   const globeGroup = new THREE.Group();
   scene.add(globeGroup);
 
+  // Luzes (afectam apenas materiais que reagem a luz — Phong/Standard/etc.
+  // O globo e a atmosfera usam BasicMaterial/ShaderMaterial, ficam intactos)
+  scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+  const dirLight = new THREE.DirectionalLight(0xffffff, 0.9);
+  dirLight.position.set(120, 180, 200);
+  scene.add(dirLight);
+  const fillLight = new THREE.DirectionalLight(0x88aaff, 0.35);
+  fillLight.position.set(-150, -80, -100);
+  scene.add(fillLight);
+
   // ── SHADERS ──
   const globeVS = `
     varying vec3 vNormal;
@@ -2547,8 +2557,69 @@ updateTime(); setInterval(updateTime, 1000);
     return group;
   }
 
-  // Marcadores iniciais (Portugal como origem, sempre)
-  let ptRing = addMarker(38.7, -9.1, 0xffffff);
+  // Cria a geometria de um pushpin 3D (esfera + haste cilíndrica + ponta cónica).
+  // Construído com a ponta na origem, esfera ao longo de +Y. Cacheado por chave de cor.
+  const PUSHPIN_CACHE = {};
+  function getPushpin(headColor, shaftColor) {
+    const key = `${headColor}|${shaftColor}`;
+    if (PUSHPIN_CACHE[key]) return PUSHPIN_CACHE[key].clone();
+
+    // Dimensões (proporcionais — pin discreto). RADIUS≈134, então mantemos pequeno.
+    const headR = 4.5;
+    const shaftLen = 9;
+    const shaftR = 0.7;
+    const tipLen = 1.8;
+
+    const group = new THREE.Group();
+
+    // Ponta (cone) — na origem, a apontar para -Y
+    const tipGeo = new THREE.ConeGeometry(shaftR, tipLen, 12);
+    const tipMesh = new THREE.Mesh(tipGeo, new THREE.MeshPhongMaterial({
+      color: shaftColor, shininess: 80, specular: 0x666666,
+    }));
+    // ConeGeometry tem ponta em +Y por defeito; queremos ponta em -Y
+    tipMesh.rotation.x = Math.PI;
+    tipMesh.position.y = tipLen / 2;
+    group.add(tipMesh);
+
+    // Haste (cilindro)
+    const shaftGeo = new THREE.CylinderGeometry(shaftR, shaftR, shaftLen, 16);
+    const shaftMesh = new THREE.Mesh(shaftGeo, new THREE.MeshPhongMaterial({
+      color: shaftColor, shininess: 80, specular: 0x666666,
+    }));
+    shaftMesh.position.y = tipLen + shaftLen / 2;
+    group.add(shaftMesh);
+
+    // Esfera (cabeça)
+    const headGeo = new THREE.SphereGeometry(headR, 24, 18);
+    const headMesh = new THREE.Mesh(headGeo, new THREE.MeshPhongMaterial({
+      color: headColor, shininess: 50, specular: 0x222222,
+    }));
+    headMesh.position.y = tipLen + shaftLen + headR * 0.85; // ligeira sobreposição com a haste
+    group.add(headMesh);
+
+    PUSHPIN_CACHE[key] = group;
+    return group.clone();
+  }
+
+  // Marcador em forma de pushpin 3D. A ponta fica nas coords (lat, lon)
+  // e o pin orienta-se radialmente para fora (cabeça para o céu, ponta no globo).
+  function add3DPinMarker(lat, lon, headColor, shaftColor) {
+    const tipPos = coordToPos(lat, lon, RADIUS + 0.2);
+    const outwardDir = tipPos.clone().normalize();
+
+    const pin = getPushpin(headColor, shaftColor || '#cfd2d6');
+
+    pin.position.copy(tipPos);
+    const upLocal = new THREE.Vector3(0, 1, 0);
+    pin.quaternion.setFromUnitVectors(upLocal, outwardDir);
+
+    pin.renderOrder = 999;
+    globeGroup.add(pin);
+    return pin;
+  }
+  // Marcadores iniciais — Portugal como pushpin (esfera branca, haste cinzenta)
+  let ptRing = add3DPinMarker(38.7, -9.1, '#ffffff', '#b8bcc2');
   let destRings = [];
 
   // Atualiza marcadores de destino. Aceita uma lista de nomes de países (ou um único string,
@@ -2602,7 +2673,8 @@ updateTime(); setInterval(updateTime, 1000);
     t += 0.008;
 
     const p = 0.88 + 0.18 * Math.sin(t * 3);
-    ptRing.scale.set(p, p, 1);
+    // Pulsar o pin 3D (escala base 1, geometria já tem dimensões reais)
+    ptRing.scale.set(p, p, p);
     destRings.forEach(r => r.scale.set(p, p, 1));
 
     if (!isRotating) globeGroup.rotation.y -= 0.0015;
