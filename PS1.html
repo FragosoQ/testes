@@ -2384,6 +2384,13 @@ function initializeSheetWatcher() {
 
 initializeSheetWatcher();
 
+// Refresh automático da página inteira a cada 10 minutos.
+// Boa prática para kiosks: liberta memória de caches/long-running JS, recarrega texturas
+// e garante que qualquer fix no código entra em produção sem intervenção manual.
+setTimeout(() => {
+  window.location.reload();
+}, 10 * 60 * 1000);
+
 // Carregar dados iniciais do sheet para atualizar o globo imediatamente
 loadSheetDataCached().then(cached => renderSheetData(cached)).catch(err => console.warn('Initial sheet load failed:', err));
 
