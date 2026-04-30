@@ -892,9 +892,9 @@ footer {
     <div class="f-left">
       <div class="f-dot"></div>
       <span class="f-status">Em Curso</span>
-      <span class="f-op-divider" style="width:1px;height:20px;background:rgba(255,255,255,0.1);margin:0 8px;flex-shrink:0;display:none;"></span>
-      <span class="f-op-label" style="display:none;">Operador</span>
-      <span class="f-op" style="display:none;">Richard · Diogo</span>
+      <span class="f-op-divider" style="width:1px;height:20px;background:rgba(255,255,255,0.1);margin:0 8px;flex-shrink:0;"></span>
+      <span class="f-op-label">Operador</span>
+      <span class="f-op">Octávio</span>
     </div>
     <div class="f-right">
       <div class="f-date" id="fdate">—</div>
@@ -2519,6 +2519,20 @@ updateTime(); setInterval(updateTime, 1000);
 
   const globeMesh = new THREE.Mesh(globeGeo, globeMat);
   globeGroup.add(globeMesh);
+
+  // Esfera interior escura — dá densidade visual ao globo (compensa o additive blending
+  // do material principal, que tende a deixar passar o fundo). Ligeiramente menor que
+  // a esfera do mapa para nunca aparecer por fora.
+  const innerSphereMesh = new THREE.Mesh(
+    new THREE.SphereGeometry(RADIUS * 0.985, 48, 48),
+    new THREE.MeshBasicMaterial({
+      color: 0x020610,        // azul-marinho muito escuro, quase preto
+      transparent: true,
+      opacity: 0.95,
+      depthWrite: true,
+    })
+  );
+  globeGroup.add(innerSphereMesh);
 
   // ── ATMOSPHERE ──
   const atmMesh = new THREE.Mesh(
