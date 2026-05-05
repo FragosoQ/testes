@@ -277,7 +277,7 @@ main {
 
 .id-modelo {
   font-family: 'Bebas Neue', sans-serif;
-  font-size: clamp(72px, 5.5vw, 92px);
+  font-size: clamp(42px, 5.5vw, 92px);
   letter-spacing: 2px; color: #fff;
   line-height: 1;
   margin-bottom: clamp(4px, 0.8vh, 8px);
@@ -444,6 +444,9 @@ main {
   overflow: hidden;
   text-overflow: ellipsis;
   line-height: 1.25;
+}
+.zona-card-list-item.dim {
+  color: rgba(255,255,255,0.35);
 }
 .zona-card-list-empty {
   font-family: 'Barlow Condensed', sans-serif;
@@ -817,7 +820,7 @@ footer {
         </div>
 
         <div class="hero-id">
-          <div class="id-modelo-label">Países</div>
+          <div class="id-modelo-label">País</div>
           <div class="id-pais">
             <span class="id-flag"></span>
             <span class="id-pais-info">- · -</span>
@@ -1826,6 +1829,10 @@ const ZONA_CONFIGS = [
       tab: 'soldaduraEditávelMulti',
       header: 'LOTE',
       column: 'D',
+      // Lotes cuja coluna K (FIM SOLDADURA / ACABAMENTO) já está preenchida
+      // ficam visualmente esbatidos (concluídos).
+      dimHeader: 'FIM SOLDADURA / ACABAMENTO',
+      dimColumn: 'K',
       limit: 5,
     },
   },
@@ -2000,16 +2007,27 @@ async function fetchZonaListValues(source) {
   }
 
   // Modo default: percorre as primeiras linhas de uma única coluna
+  // Modo default: percorre as primeiras linhas de uma única coluna.
+  // Se `dimColumn`/`dimHeader` for fornecido, cada item vem como { value, dim }
+  // onde dim=true se a célula da coluna de "dim" nessa mesma linha não estiver vazia.
   const colIndex = findSheetCell(table, source.header, source.column);
   if (colIndex < 0 || !Array.isArray(table.rows)) {
     return [];
   }
+  const dimColIndex = (source.dimColumn || source.dimHeader)
+    ? findSheetCell(table, source.dimHeader, source.dimColumn)
+    : -1;
   const limit = Math.max(1, source.limit || 5);
   const values = [];
   for (let i = 0; i < table.rows.length && values.length < limit; i += 1) {
     const v = getValueFromRow(table.rows[i], colIndex);
     if (v != null && String(v).trim() !== '') {
-      values.push(String(v).trim());
+      const item = { value: String(v).trim(), dim: false };
+      if (dimColIndex >= 0) {
+        const dimVal = getValueFromRow(table.rows[i], dimColIndex);
+        item.dim = dimVal != null && String(dimVal).trim() !== '';
+      }
+      values.push(item);
     }
   }
   return values;
@@ -2045,8 +2063,14 @@ function buildZonaListCard(config, items) {
   const card = document.createElement('div');
   card.className = `zona-card list ${cls}${config.tall ? ' tall' : ''}`;
 
+  // Cada item pode ser uma string (modo simples) ou um objecto { value, dim }
+  // (quando há coluna auxiliar a controlar o "esbatido").
   const itemsHtml = list.length
-    ? list.map(v => `<div class="zona-card-list-item">${escapeHtml(v)}</div>`).join('')
+    ? list.map(item => {
+        const text = (item && typeof item === 'object') ? item.value : item;
+        const dim = !!(item && typeof item === 'object' && item.dim);
+        return `<div class="zona-card-list-item${dim ? ' dim' : ''}">${escapeHtml(text)}</div>`;
+      }).join('')
     : '<div class="zona-card-list-empty">Sem dados</div>';
 
   const src = config.listSource || {};
