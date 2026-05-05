@@ -445,6 +445,26 @@ main {
   text-overflow: ellipsis;
   line-height: 1.25;
 }
+
+/* Item destacado: corresponde ao modelo+lote actualmente em produção */
+.zona-card-list-item.active {
+  color: #fff;
+  font-weight: 700;
+  animation: list-item-glow 1.8s ease-in-out infinite;
+}
+@keyframes list-item-glow {
+  0%, 100% {
+    text-shadow:
+      0 0 4px rgba(0, 212, 255, 0.5),
+      0 0 8px rgba(0, 212, 255, 0.3);
+  }
+  50% {
+    text-shadow:
+      0 0 8px rgba(0, 212, 255, 0.95),
+      0 0 18px rgba(0, 212, 255, 0.7),
+      0 0 28px rgba(0, 212, 255, 0.4);
+  }
+}
 .zona-card-list-item.dim {
   color: rgba(255,255,255,0.35);
 }
@@ -1865,6 +1885,32 @@ const ZONA_CONFIGS = [
 // Cache simples para a lista de lotes — partilhado pelo refresh periódico
 const ZONA_LIST_CACHE = {};
 
+// Modelo+Lote actual (vindo do PS1!D2). Actualizado por renderSheetData.
+// Usado para destacar o item correspondente nas listas (ex: Planeamento).
+let currentModeloLote = null;
+
+// Normaliza uma string para comparação de "modelo - lote":
+// minúsculas, sem espaços extra à volta do "-", sem acentos.
+function normalizeModeloLote(str) {
+  return String(str || '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/\s*-\s*/g, '-')   // "MWS500 SDS - 87L" → "mws500 sds-87l"
+    .replace(/\s+/g, ' ')        // colapsa espaços múltiplos
+    .trim();
+}
+
+// Percorre todos os itens das listas no DOM e marca como .active aqueles
+// que correspondem ao modelo+lote actual. Idempotente — pode ser chamada
+// quantas vezes for preciso.
+function applyActiveHighlight() {
+  const target = currentModeloLote ? normalizeModeloLote(currentModeloLote) : null;
+  document.querySelectorAll('.zona-card-list-item').forEach(el => {
+    const match = target && normalizeModeloLote(el.textContent) === target;
+    el.classList.toggle('active', !!match);
+  });
+}
+
 function updateEvolucao(value) {
   const pct = Number.isFinite(value) ? value : FALLBACK_EV;
   evEl.textContent = `${pct}%`;
@@ -2114,6 +2160,7 @@ function renderZones(rowData) {
           ZONA_LIST_CACHE[cacheKey] = values;
           const fresh = buildZonaListCard(config, values);
           card.replaceWith(fresh);
+          applyActiveHighlight();
         })
         .catch(err => console.warn(`Falha a carregar lista para "${config.nome}":`, err));
     } else if (config.type === 'single') {
@@ -2150,6 +2197,8 @@ function renderZones(rowData) {
       zg.appendChild(buildZonaPctCard(config, rowData));
     }
   });
+  // Aplica o destaque a quaisquer cartas-lista renderizadas a partir da cache
+  applyActiveHighlight();
 }
 
 function updateDeadline(startValue, dueValue) {
@@ -2363,6 +2412,9 @@ function renderSheetData(sheetRow) {
         ? `Lote &nbsp;·&nbsp; ${escapeHtml(lote)}`
         : 'Sem Lote';
     }
+    // Actualiza referência usada pelas listas para destacar o item activo
+    currentModeloLote = (modelo && lote) ? `${modelo} - ${lote}` : null;
+    applyActiveHighlight();
 
     setPrioridadeAtiva(prioridadeAtiva);
     updateStatus(chaveProcura);
@@ -2385,6 +2437,8 @@ function renderSheetData(sheetRow) {
     setPrioridadeAtiva(null);
     updateStatus(null);
     updateEvolucao(0);
+    currentModeloLote = null;
+    applyActiveHighlight();
   });
 
   renderZones(sheetRow);
