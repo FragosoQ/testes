@@ -434,6 +434,19 @@ main {
   min-height: 0;
   overflow: hidden;
 }
+
+/* Variante: items em grid (ex: Histórico em 3×4) */
+.zona-card-list-items.is-grid-list {
+  display: grid;
+  grid-template-columns: repeat(var(--grid-cols, 3), minmax(0, 1fr));
+  grid-template-rows: repeat(var(--grid-rows, 4), 1fr);
+  gap: clamp(2px, 0.5vh, 6px) clamp(6px, 1vw, 14px);
+  align-items: center;
+}
+.zona-card-list-items.is-grid-list .zona-card-list-item {
+  text-align: center;
+  padding: 0 2px;
+}
 .zona-card-list-item {
   font-family: 'Barlow Condensed', sans-serif;
   font-size: calc(clamp(23px, 1.7vh, 18px) * 1.1);
@@ -1867,7 +1880,8 @@ const ZONA_CONFIGS = [
       endColumn: 'DK',
       ignoreLabels: ['%'],
       hideHeader: true,
-      limit: 50,
+      gridLayout: { cols: 4, rows: 3, flow: 'column' },
+      limit: 12,
     },
   },
   { nome: 'Envolventes', tab: 'PS1', header: 'Envolventes', column: 'R' },
@@ -2126,10 +2140,19 @@ function buildZonaListCard(config, items) {
     ? ''
     : `<div class="zona-card-list-header">${escapeHtml(headerLabel)}</div>`;
 
+  // Layout em grid (ex: Histórico em 3×4 fluxo coluna-a-coluna)
+  let itemsClass = 'zona-card-list-items';
+  let itemsStyle = '';
+  if (src.gridLayout) {
+    const { cols = 3, rows = 4, flow = 'row' } = src.gridLayout;
+    itemsClass += ' is-grid-list';
+    itemsStyle = ` style="--grid-cols:${cols};--grid-rows:${rows};grid-auto-flow:${flow === 'column' ? 'column' : 'row'};"`;
+  }
+
   card.innerHTML = `
     <div class="zona-card-label">${escapeHtml(config.nome)}</div>
     ${headerHtml}
-    <div class="zona-card-list-items">${itemsHtml}</div>`;
+    <div class="${itemsClass}"${itemsStyle}>${itemsHtml}</div>`;
   return card;
 }
 
