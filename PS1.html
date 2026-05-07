@@ -2552,196 +2552,125 @@ function updateTime() {
 }
 updateTime(); setInterval(updateTime, 1000);
 
-/* ── BREAK VIDEO: playlist com crossfade entre vídeos ─────────────────
-   Estratégia:
-   - 2 elementos <video> empilhados (A e B) que alternam
-   - showPlaylist() carrega vídeo 0 em A, fade-in do stage
-   - Quando A está perto do fim (1.5s antes), pré-carrega vídeo 1 em B e arranca-o
-     mudo, depois faz crossfade (B fica activo, A inactivo)
-   - Após o último vídeo terminar, fade-out do stage
-   - Tenta autoplay com som; se o browser bloquear, faz retry mudo
-   - Disparo automático: 2x por dia em horário fixo Lisboa (09:55 e 15:55)
-   - Clique no logo: dispara a playlist imediatamente (testes/demos)
-*/
+
+//alterei aqui
+/* ── BREAK VIDEO: Single Video Version ───────────────── */
 (function setupBreakVideo() {
   const stage = document.getElementById('breakVideoStage');
   const videoA = document.getElementById('breakVideoA');
-  const videoB = document.getElementById('breakVideoB');
-  if (!stage || !videoA || !videoB) return;
+  const videoB = document.getElementById('breakVideoB'); // Mantido para não quebrar o HTML
+  if (!stage || !videoA) return;
 
-  const PLAYLIST = [
-    'https://res.cloudinary.com/djxxk3ipz/video/upload/v1777992748/magnific_exercise-1-neck-tension-r_2918326826_qzfkk1.mp4',
-    'https://res.cloudinary.com/djxxk3ipz/video/upload/v1777993659/magnific_exercise-3-spinal-mobilit_2925610676_hwo9vp.mp4',
-  ];
-  // Horários fixos Lisboa (HH, MM) em que a playlist deve aparecer
+  const VIDEO_URL = 'https://res.cloudinary.com/djxxk3ipz/video/upload/v1778168513/pikaso-untitled-project-2026-05-07_a2clz5.mp4';
+  
   const SCHEDULE_LISBON = [[9, 55], [15, 55]];
-  const FADE_OUT_MS = 2800;         // bate certo com transition do stage (CSS)
-  const CROSSFADE_MS = 1500;        // bate certo com transition .break-video
+  const FADE_OUT_MS = 2800;
 
   let nextScheduleId = null;
-  let crossfadePrepId = null;
   let fadeOutCleanupId = null;
   let isPlaying = false;
 
   function clearPending() {
-    [nextScheduleId, crossfadePrepId, fadeOutCleanupId].forEach(id => {
+    [nextScheduleId, fadeOutCleanupId].forEach(id => {
       if (id != null) clearTimeout(id);
     });
-    nextScheduleId = crossfadePrepId = fadeOutCleanupId = null;
+    nextScheduleId = fadeOutCleanupId = null;
   }
 
-  // Tenta dar play com som; se autoplay com som falhar, faz fallback mudo
   function tryPlay(v) {
     v.muted = false;
     const p = v.play();
     if (p && typeof p.then === 'function') {
       p.catch(() => {
         v.muted = true;
-        v.play().catch(() => {/* desiste em silêncio */});
+        v.play().catch(() => {});
       });
     }
   }
 
-  // Ajusta a largura do stage ao ratio do vídeo activo (evita bandas pretas).
   function syncStageWidth(v) {
     if (v.videoWidth > 0 && v.videoHeight > 0) {
       const ratio = v.videoWidth / v.videoHeight;
       const heightPx = stage.offsetHeight;
-      if (heightPx > 0) {
-        stage.style.width = `${heightPx * ratio}px`;
-      }
+      if (heightPx > 0) stage.style.width = `${heightPx * ratio}px`;
     }
   }
-  videoA.addEventListener('loadedmetadata', () => {
-    if (videoA.classList.contains('is-active')) syncStageWidth(videoA);
-  });
-  videoB.addEventListener('loadedmetadata', () => {
-    if (videoB.classList.contains('is-active')) syncStageWidth(videoB);
-  });
+
+  videoA.addEventListener('loadedmetadata', () => syncStageWidth(videoA));
 
   function hideAndScheduleNext() {
     isPlaying = false;
     stage.classList.remove('is-visible');
     fadeOutCleanupId = setTimeout(() => {
-      [videoA, videoB].forEach(v => {
-        try { v.pause(); v.removeAttribute('src'); v.load(); } catch (e) {}
-      });
+      videoA.pause();
+      videoA.removeAttribute('src');
+      videoA.load();
       fadeOutCleanupId = null;
     }, FADE_OUT_MS);
-    // Próximo disparo é programado pelo schedulerLisbon, não automaticamente
     scheduleNextLisbon();
   }
 
-  // Toca o vídeo no índice i no slot dado (videoA ou videoB).
-  // O outro slot torna-se inactivo. O timing do crossfade para o próximo
-  // é programado quando metadata + duração ficam disponíveis.
-  function playSlot(slotCurrent, slotOther, i) {
-    if (i >= PLAYLIST.length) {
-      hideAndScheduleNext();
-      return;
-    }
-
-    // Ativa o slot actual, desactiva o outro (crossfade via opacity)
-    slotCurrent.classList.add('is-active');
-    slotOther.classList.remove('is-active');
-
-    // Limpa eventos antigos
-    slotCurrent.onended = null;
-    slotCurrent.ontimeupdate = null;
-
-    // Carrega e arranca este slot
-    slotCurrent.src = PLAYLIST[i];
-    slotCurrent.load();
-    tryPlay(slotCurrent);
-    syncStageWidth(slotCurrent);
-
-    // Próximo vídeo a tocar
-    const nextIdx = i + 1;
-
-    if (nextIdx < PLAYLIST.length) {
-      // Quando faltarem CROSSFADE_MS, pré-carrega o próximo no outro slot
-      // e arranca-o mudo, depois faz crossfade ao mesmo tempo que este termina.
-      let crossfadeStarted = false;
-      slotCurrent.ontimeupdate = () => {
-        if (crossfadeStarted) return;
-        const remaining = (slotCurrent.duration - slotCurrent.currentTime) * 1000;
-        if (Number.isFinite(remaining) && remaining <= CROSSFADE_MS) {
-          crossfadeStarted = true;
-          slotCurrent.ontimeupdate = null;
-
-          // Carrega próximo no slot oposto e arranca
-          slotOther.src = PLAYLIST[nextIdx];
-          slotOther.load();
-          // Quando metadata estiver pronta, dá play e troca classes (crossfade arranca)
-          const startNext = () => {
-            slotOther.removeEventListener('canplay', startNext);
-            tryPlay(slotOther);
-            // Faz crossfade — basta trocar classes, CSS trata da animação
-            slotOther.classList.add('is-active');
-            slotCurrent.classList.remove('is-active');
-            // E deixa o slotOther continuar o fluxo (próximo vídeo etc.)
-            scheduleNextAfter(slotOther, slotCurrent, nextIdx);
-          };
-          slotOther.addEventListener('canplay', startNext, { once: true });
-        }
-      };
-      // Fallback: se 'ended' disparar antes (vídeos curtos < CROSSFADE_MS), passa imediato
-      slotCurrent.onended = () => {
-        if (!crossfadeStarted) {
-          crossfadeStarted = true;
-          playSlot(slotOther, slotCurrent, nextIdx);
-        }
-      };
-    } else {
-      // Último vídeo da playlist — quando terminar, fade-out
-      slotCurrent.onended = () => hideAndScheduleNext();
-    }
-  }
-
-  // Helper: depois de fazer crossfade, ainda preciso de programar o próximo
-  // crossfade/fim a partir do slot que acabou de assumir o controlo.
-  function scheduleNextAfter(activeSlot, otherSlot, currentIdx) {
-    const nextIdx = currentIdx + 1;
-    activeSlot.onended = null;
-    activeSlot.ontimeupdate = null;
-
-    if (nextIdx < PLAYLIST.length) {
-      let crossfadeStarted = false;
-      activeSlot.ontimeupdate = () => {
-        if (crossfadeStarted) return;
-        const remaining = (activeSlot.duration - activeSlot.currentTime) * 1000;
-        if (Number.isFinite(remaining) && remaining <= CROSSFADE_MS) {
-          crossfadeStarted = true;
-          activeSlot.ontimeupdate = null;
-          otherSlot.src = PLAYLIST[nextIdx];
-          otherSlot.load();
-          const startNext = () => {
-            otherSlot.removeEventListener('canplay', startNext);
-            tryPlay(otherSlot);
-            otherSlot.classList.add('is-active');
-            activeSlot.classList.remove('is-active');
-            scheduleNextAfter(otherSlot, activeSlot, nextIdx);
-          };
-          otherSlot.addEventListener('canplay', startNext, { once: true });
-        }
-      };
-      activeSlot.onended = () => {
-        if (!crossfadeStarted) {
-          crossfadeStarted = true;
-          playSlot(otherSlot, activeSlot, nextIdx);
-        }
-      };
-    } else {
-      activeSlot.onended = () => hideAndScheduleNext();
-    }
-  }
-
   function showPlaylist() {
-    nextScheduleId = null;
+    if (isPlaying) return;
+    clearPending();
     isPlaying = true;
+    
     stage.classList.add('is-visible');
-    playSlot(videoA, videoB, 0);
+    videoA.classList.add('is-active');
+    if (videoB) videoB.classList.remove('is-active');
+
+    videoA.src = VIDEO_URL;
+    videoA.load();
+    tryPlay(videoA);
+
+    videoA.onended = () => hideAndScheduleNext();
   }
+
+  // --- Lógica de Agendamento (Scheduler) ---
+  function scheduleNextLisbon() {
+    if (nextScheduleId) clearTimeout(nextScheduleId);
+    
+    constagora = new Date();
+    const agoraLisboa = new Date(agora.toLocaleString("en-US", {timeZone: "Europe/Lisbon"}));
+    
+    let proximo = null;
+    for (let [hh, mm] of SCHEDULE_LISBON) {
+      let d = new Date(agoraLisboa);
+      d.setHours(hh, mm, 0, 0);
+      if (d > agoraLisboa) {
+        proximo = d;
+        break;
+      }
+    }
+
+    if (!proximo) {
+      proximo = new Date(agoraLisboa);
+      proximo.setDate(proximo.getDate() + 1);
+      proximo.setHours(SCHEDULE_LISBON[0][0], SCHEDULE_LISBON[0][1], 0, 0);
+    }
+
+    const diffMs = proximo.getTime() - agoraLisboa.getTime();
+    nextScheduleId = setTimeout(showPlaylist, diffMs);
+  }
+
+  // Gatilho Manual (Logo)
+  const logo = document.getElementById('logo');
+  if (logo) {
+    logo.style.cursor = 'pointer';
+    logo.onclick = (e) => {
+      e.preventDefault();
+      showPlaylist();
+    };
+  }
+
+  scheduleNextLisbon();
+})();
+
+
+
+
+
+
 
   // Trigger manual: clique no logo força a playlist agora (se não está a tocar)
   function triggerNow() {
