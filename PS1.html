@@ -661,28 +661,39 @@ footer {
 /* ══════════════════════════════════════
    BREAK VIDEO (canto inferior esquerdo, 9:16, ciclo 36s ON / 2min OFF)
 ══════════════════════════════════════ */
-.break-video {
+.break-stage {
   position: fixed;
   left: 10vw;
   bottom: 0;
-  /* Altura fixa; largura é calculada em runtime a partir do ratio real do vídeo */
   height: 65vh;
   width: auto;             /* ajustado por JS quando o vídeo carrega */
-  border-radius: 12px 12px 0 0;
-  background: #000;
-  object-fit: cover;
-  display: block;
   z-index: 50;
-  opacity: 0;
   pointer-events: none;
+  opacity: 0;
   transform: translateY(40px);
   transition:
     opacity 2.8s cubic-bezier(0.22, 1, 0.36, 1),
     transform 2.8s cubic-bezier(0.22, 1, 0.36, 1);
 }
-.break-video.is-visible {
+.break-stage.is-visible {
   opacity: 1;
   transform: translateY(0);
+}
+
+.break-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 12px 12px 0 0;
+  background: #000;
+  object-fit: cover;
+  display: block;
+  opacity: 0;
+  transition: opacity 1.5s ease-in-out;
+}
+.break-video.is-active {
+  opacity: 1;
 }
 
 /* ══════════════════════════════════════
@@ -967,8 +978,12 @@ footer {
 
 </div>
 
-<!-- Vídeo de pausa: aparece a cada ~2.5min (visível enquanto a playlist toca + 2min oculto), canto inf. esquerdo -->
-<video id="breakVideo" class="break-video" preload="auto" playsinline></video>
+<!-- Vídeo de pausa: aparece a cada ~2.5min (visível enquanto a playlist toca + 2min oculto), canto inf. esquerdo.
+     Dois elementos empilhados para suportar crossfade entre vídeos da playlist. -->
+<div id="breakVideoStage" class="break-stage">
+  <video id="breakVideoA" class="break-video break-video-a is-active" preload="auto" playsinline></video>
+  <video id="breakVideoB" class="break-video break-video-b" preload="auto" playsinline></video>
+</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
@@ -2537,94 +2552,202 @@ function updateTime() {
 }
 updateTime(); setInterval(updateTime, 1000);
 
-/* ── BREAK VIDEO: playlist seguida, ciclo (playlist) ON / 2min OFF ─────
+/* ── BREAK VIDEO: playlist com crossfade entre vídeos ─────────────────
    Estratégia:
-   - showPlaylist() arranca o 1º vídeo, faz fade-in via classe CSS
-   - Quando um vídeo termina (event 'ended'), passa ao seguinte sem fade
-   - Após o último vídeo, faz fade-out e espera 2min antes de repetir
+   - 2 elementos <video> empilhados (A e B) que alternam
+   - showPlaylist() carrega vídeo 0 em A, fade-in do stage
+   - Quando A está perto do fim (1.5s antes), pré-carrega vídeo 1 em B e arranca-o
+     mudo, depois faz crossfade (B fica activo, A inactivo)
+   - Após o último vídeo terminar, fade-out do stage
    - Tenta autoplay com som; se o browser bloquear, faz retry mudo
-   - Clique no logo: salta a espera e mostra a playlist imediatamente.
-     O ciclo automático mantém-se (próximo aparece 2min depois desta playlist terminar).
+   - Disparo automático: 2x por dia em horário fixo Lisboa (09:55 e 15:55)
+   - Clique no logo: dispara a playlist imediatamente (testes/demos)
 */
 (function setupBreakVideo() {
-  const video = document.getElementById('breakVideo');
-  if (!video) return;
+  const stage = document.getElementById('breakVideoStage');
+  const videoA = document.getElementById('breakVideoA');
+  const videoB = document.getElementById('breakVideoB');
+  if (!stage || !videoA || !videoB) return;
 
   const PLAYLIST = [
     'https://res.cloudinary.com/djxxk3ipz/video/upload/v1777992748/magnific_exercise-1-neck-tension-r_2918326826_qzfkk1.mp4',
     'https://res.cloudinary.com/djxxk3ipz/video/upload/v1777993659/magnific_exercise-3-spinal-mobilit_2925610676_hwo9vp.mp4',
   ];
-  const HIDDEN_MS = 2 * 60 * 1000;  // 2min em pausa entre playlists
-  const FADE_OUT_MS = 2800;         // bate certo com transition do CSS
+  // Horários fixos Lisboa (HH, MM) em que a playlist deve aparecer
+  const SCHEDULE_LISBON = [[9, 55], [15, 55]];
+  const FADE_OUT_MS = 2800;         // bate certo com transition do stage (CSS)
+  const CROSSFADE_MS = 1500;        // bate certo com transition .break-video
 
-  // IDs de timeouts pendentes — guardamos para os poder cancelar quando o
-  // utilizador força um ciclo via clique no logo.
   let nextScheduleId = null;
+  let crossfadePrepId = null;
   let fadeOutCleanupId = null;
   let isPlaying = false;
 
   function clearPending() {
-    if (nextScheduleId != null) { clearTimeout(nextScheduleId); nextScheduleId = null; }
-    if (fadeOutCleanupId != null) { clearTimeout(fadeOutCleanupId); fadeOutCleanupId = null; }
+    [nextScheduleId, crossfadePrepId, fadeOutCleanupId].forEach(id => {
+      if (id != null) clearTimeout(id);
+    });
+    nextScheduleId = crossfadePrepId = fadeOutCleanupId = null;
   }
 
-  function tryPlay() {
-    video.muted = false;
-    const p = video.play();
+  // Tenta dar play com som; se autoplay com som falhar, faz fallback mudo
+  function tryPlay(v) {
+    v.muted = false;
+    const p = v.play();
     if (p && typeof p.then === 'function') {
       p.catch(() => {
-        video.muted = true;
-        video.play().catch(() => {/* desiste em silêncio */});
+        v.muted = true;
+        v.play().catch(() => {/* desiste em silêncio */});
       });
     }
   }
 
-  // Ajusta a largura ao ratio real do vídeo (evita bandas pretas).
-  video.addEventListener('loadedmetadata', () => {
-    if (video.videoWidth > 0 && video.videoHeight > 0) {
-      const ratio = video.videoWidth / video.videoHeight;
-      const heightPx = video.offsetHeight;
+  // Ajusta a largura do stage ao ratio do vídeo activo (evita bandas pretas).
+  function syncStageWidth(v) {
+    if (v.videoWidth > 0 && v.videoHeight > 0) {
+      const ratio = v.videoWidth / v.videoHeight;
+      const heightPx = stage.offsetHeight;
       if (heightPx > 0) {
-        video.style.width = `${heightPx * ratio}px`;
+        stage.style.width = `${heightPx * ratio}px`;
       }
     }
+  }
+  videoA.addEventListener('loadedmetadata', () => {
+    if (videoA.classList.contains('is-active')) syncStageWidth(videoA);
+  });
+  videoB.addEventListener('loadedmetadata', () => {
+    if (videoB.classList.contains('is-active')) syncStageWidth(videoB);
   });
 
   function hideAndScheduleNext() {
     isPlaying = false;
-    video.classList.remove('is-visible');
+    stage.classList.remove('is-visible');
     fadeOutCleanupId = setTimeout(() => {
-      try { video.pause(); video.removeAttribute('src'); video.load(); } catch (e) {}
+      [videoA, videoB].forEach(v => {
+        try { v.pause(); v.removeAttribute('src'); v.load(); } catch (e) {}
+      });
       fadeOutCleanupId = null;
     }, FADE_OUT_MS);
-    nextScheduleId = setTimeout(showPlaylist, HIDDEN_MS);
+    // Próximo disparo é programado pelo schedulerLisbon, não automaticamente
+    scheduleNextLisbon();
   }
 
-  function playIndex(i) {
+  // Toca o vídeo no índice i no slot dado (videoA ou videoB).
+  // O outro slot torna-se inactivo. O timing do crossfade para o próximo
+  // é programado quando metadata + duração ficam disponíveis.
+  function playSlot(slotCurrent, slotOther, i) {
     if (i >= PLAYLIST.length) {
       hideAndScheduleNext();
       return;
     }
-    video.onended = () => playIndex(i + 1);
-    video.src = PLAYLIST[i];
-    video.load();
-    tryPlay();
+
+    // Ativa o slot actual, desactiva o outro (crossfade via opacity)
+    slotCurrent.classList.add('is-active');
+    slotOther.classList.remove('is-active');
+
+    // Limpa eventos antigos
+    slotCurrent.onended = null;
+    slotCurrent.ontimeupdate = null;
+
+    // Carrega e arranca este slot
+    slotCurrent.src = PLAYLIST[i];
+    slotCurrent.load();
+    tryPlay(slotCurrent);
+    syncStageWidth(slotCurrent);
+
+    // Próximo vídeo a tocar
+    const nextIdx = i + 1;
+
+    if (nextIdx < PLAYLIST.length) {
+      // Quando faltarem CROSSFADE_MS, pré-carrega o próximo no outro slot
+      // e arranca-o mudo, depois faz crossfade ao mesmo tempo que este termina.
+      let crossfadeStarted = false;
+      slotCurrent.ontimeupdate = () => {
+        if (crossfadeStarted) return;
+        const remaining = (slotCurrent.duration - slotCurrent.currentTime) * 1000;
+        if (Number.isFinite(remaining) && remaining <= CROSSFADE_MS) {
+          crossfadeStarted = true;
+          slotCurrent.ontimeupdate = null;
+
+          // Carrega próximo no slot oposto e arranca
+          slotOther.src = PLAYLIST[nextIdx];
+          slotOther.load();
+          // Quando metadata estiver pronta, dá play e troca classes (crossfade arranca)
+          const startNext = () => {
+            slotOther.removeEventListener('canplay', startNext);
+            tryPlay(slotOther);
+            // Faz crossfade — basta trocar classes, CSS trata da animação
+            slotOther.classList.add('is-active');
+            slotCurrent.classList.remove('is-active');
+            // E deixa o slotOther continuar o fluxo (próximo vídeo etc.)
+            scheduleNextAfter(slotOther, slotCurrent, nextIdx);
+          };
+          slotOther.addEventListener('canplay', startNext, { once: true });
+        }
+      };
+      // Fallback: se 'ended' disparar antes (vídeos curtos < CROSSFADE_MS), passa imediato
+      slotCurrent.onended = () => {
+        if (!crossfadeStarted) {
+          crossfadeStarted = true;
+          playSlot(slotOther, slotCurrent, nextIdx);
+        }
+      };
+    } else {
+      // Último vídeo da playlist — quando terminar, fade-out
+      slotCurrent.onended = () => hideAndScheduleNext();
+    }
+  }
+
+  // Helper: depois de fazer crossfade, ainda preciso de programar o próximo
+  // crossfade/fim a partir do slot que acabou de assumir o controlo.
+  function scheduleNextAfter(activeSlot, otherSlot, currentIdx) {
+    const nextIdx = currentIdx + 1;
+    activeSlot.onended = null;
+    activeSlot.ontimeupdate = null;
+
+    if (nextIdx < PLAYLIST.length) {
+      let crossfadeStarted = false;
+      activeSlot.ontimeupdate = () => {
+        if (crossfadeStarted) return;
+        const remaining = (activeSlot.duration - activeSlot.currentTime) * 1000;
+        if (Number.isFinite(remaining) && remaining <= CROSSFADE_MS) {
+          crossfadeStarted = true;
+          activeSlot.ontimeupdate = null;
+          otherSlot.src = PLAYLIST[nextIdx];
+          otherSlot.load();
+          const startNext = () => {
+            otherSlot.removeEventListener('canplay', startNext);
+            tryPlay(otherSlot);
+            otherSlot.classList.add('is-active');
+            activeSlot.classList.remove('is-active');
+            scheduleNextAfter(otherSlot, activeSlot, nextIdx);
+          };
+          otherSlot.addEventListener('canplay', startNext, { once: true });
+        }
+      };
+      activeSlot.onended = () => {
+        if (!crossfadeStarted) {
+          crossfadeStarted = true;
+          playSlot(otherSlot, activeSlot, nextIdx);
+        }
+      };
+    } else {
+      activeSlot.onended = () => hideAndScheduleNext();
+    }
   }
 
   function showPlaylist() {
     nextScheduleId = null;
     isPlaying = true;
-    video.classList.add('is-visible');
-    playIndex(0);
+    stage.classList.add('is-visible');
+    playSlot(videoA, videoB, 0);
   }
 
-  // Trigger manual: clique no logo força a playlist agora.
-  // Se já está a tocar, ignora (evita interrupção do que o utilizador está a ver).
+  // Trigger manual: clique no logo força a playlist agora (se não está a tocar)
   function triggerNow() {
     if (isPlaying) return;
     clearPending();
-    // Garante que o vídeo está em estado limpo antes de começar
-    try { video.pause(); } catch (e) {}
+    [videoA, videoB].forEach(v => { try { v.pause(); } catch (e) {} });
     showPlaylist();
   }
 
@@ -2634,8 +2757,66 @@ updateTime(); setInterval(updateTime, 1000);
     logoEl.addEventListener('click', triggerNow);
   }
 
-  // Arranca após 2min do load (deixa o dashboard estabilizar antes do 1º vídeo)
-  nextScheduleId = setTimeout(showPlaylist, HIDDEN_MS);
+  // ── Agendador: dispara nos horários SCHEDULE_LISBON, em hora de Lisboa ──
+  // Tolerância de 60s: se o page load acontecer entre 09:55 e 09:56, ainda dispara.
+
+  // Devolve "HH:MM" actual em Lisboa (string ZULU-safe).
+  function nowLisbon() {
+    const fmt = new Intl.DateTimeFormat('pt-PT', {
+      timeZone: 'Europe/Lisbon',
+      hour12: false,
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+    });
+    const parts = {};
+    fmt.formatToParts(new Date()).forEach(p => { if (p.type !== 'literal') parts[p.type] = p.value; });
+    return {
+      // Date object representando este instante em Lisboa (mas montado como local)
+      lisbonDate: new Date(`${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}:${parts.second}`),
+      h: parseInt(parts.hour, 10),
+      m: parseInt(parts.minute, 10),
+      s: parseInt(parts.second, 10),
+    };
+  }
+
+  // Devolve { delayMs, justMissedRecent } para o próximo trigger horário.
+  // Se um trigger ocorreu nos últimos 60s, dispara já (tolerância para reload).
+  function nextLisbonTrigger() {
+    const now = nowLisbon();
+    const minutesNow = now.h * 60 + now.m + now.s / 60;
+    const TOL_S = 60; // 60s de tolerância depois do horário
+
+    // Verifica se algum horário ocorreu nos últimos 60s — se sim, dispara já
+    for (const [hh, mm] of SCHEDULE_LISBON) {
+      const target = hh * 60 + mm;
+      const diffSec = (minutesNow - target) * 60; // segundos depois do horário
+      if (diffSec >= 0 && diffSec <= TOL_S) {
+        return { delayMs: 0, justMissed: true };
+      }
+    }
+
+    // Caso contrário: encontra o próximo horário no futuro
+    let bestDelay = Infinity;
+    for (const [hh, mm] of SCHEDULE_LISBON) {
+      const target = hh * 60 + mm;
+      let deltaMin = target - minutesNow;
+      if (deltaMin <= 0) deltaMin += 24 * 60; // amanhã
+      if (deltaMin * 60 * 1000 < bestDelay) bestDelay = deltaMin * 60 * 1000;
+    }
+    return { delayMs: bestDelay, justMissed: false };
+  }
+
+  function scheduleNextLisbon() {
+    if (nextScheduleId != null) clearTimeout(nextScheduleId);
+    const { delayMs } = nextLisbonTrigger();
+    nextScheduleId = setTimeout(() => {
+      nextScheduleId = null;
+      if (!isPlaying) showPlaylist();
+      else scheduleNextLisbon(); // se ainda a tocar (improvável), tenta de novo
+    }, delayMs);
+  }
+
+  scheduleNextLisbon();
 })();
 
 /* ── SYNC: prazo+details = altura do zonas-panel ── */
