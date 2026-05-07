@@ -669,17 +669,16 @@ footer {
   height: 65vh;
   width: auto;             /* ajustado por JS quando o vídeo carrega */
   border-radius: 12px 12px 0 0;
-  border: 1px solid rgba(255,255,255,0.18);
-  border-bottom: none;
-  box-shadow: 0 -8px 40px rgba(0,0,0,0.55), 0 0 0 1px rgba(0,0,0,0.4);
   background: #000;
   object-fit: cover;
   display: block;
   z-index: 50;
   opacity: 0;
   pointer-events: none;
-  transform: translateY(12px);
-  transition: opacity 1.2s ease, transform 1.2s ease;
+  transform: translateY(40px);
+  transition:
+    opacity 2.8s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 2.8s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .break-video.is-visible {
   opacity: 1;
@@ -2544,6 +2543,8 @@ updateTime(); setInterval(updateTime, 1000);
    - Quando um vídeo termina (event 'ended'), passa ao seguinte sem fade
    - Após o último vídeo, faz fade-out e espera 2min antes de repetir
    - Tenta autoplay com som; se o browser bloquear, faz retry mudo
+   - Clique no logo: salta a espera e mostra a playlist imediatamente.
+     O ciclo automático mantém-se (próximo aparece 2min depois desta playlist terminar).
 */
 (function setupBreakVideo() {
   const video = document.getElementById('breakVideo');
@@ -2554,26 +2555,34 @@ updateTime(); setInterval(updateTime, 1000);
     'https://res.cloudinary.com/djxxk3ipz/video/upload/v1777993659/magnific_exercise-3-spinal-mobilit_2925610676_hwo9vp.mp4',
   ];
   const HIDDEN_MS = 2 * 60 * 1000;  // 2min em pausa entre playlists
-  const FADE_OUT_MS = 1200;         // bate certo com transition do CSS
+  const FADE_OUT_MS = 2800;         // bate certo com transition do CSS
+
+  // IDs de timeouts pendentes — guardamos para os poder cancelar quando o
+  // utilizador força um ciclo via clique no logo.
+  let nextScheduleId = null;
+  let fadeOutCleanupId = null;
+  let isPlaying = false;
+
+  function clearPending() {
+    if (nextScheduleId != null) { clearTimeout(nextScheduleId); nextScheduleId = null; }
+    if (fadeOutCleanupId != null) { clearTimeout(fadeOutCleanupId); fadeOutCleanupId = null; }
+  }
 
   function tryPlay() {
     video.muted = false;
     const p = video.play();
     if (p && typeof p.then === 'function') {
       p.catch(() => {
-        // Autoplay com som bloqueado — tenta mudo (sempre permitido)
         video.muted = true;
         video.play().catch(() => {/* desiste em silêncio */});
       });
     }
   }
 
-  // Ajusta a largura do contentor ao ratio real do vídeo (evita bandas pretas).
-  // É chamado sempre que metadata de um novo vídeo é carregada.
+  // Ajusta a largura ao ratio real do vídeo (evita bandas pretas).
   video.addEventListener('loadedmetadata', () => {
     if (video.videoWidth > 0 && video.videoHeight > 0) {
       const ratio = video.videoWidth / video.videoHeight;
-      // Largura = altura actual × ratio. Usa offsetHeight para apanhar valor real em px.
       const heightPx = video.offsetHeight;
       if (heightPx > 0) {
         video.style.width = `${heightPx * ratio}px`;
@@ -2582,21 +2591,20 @@ updateTime(); setInterval(updateTime, 1000);
   });
 
   function hideAndScheduleNext() {
+    isPlaying = false;
     video.classList.remove('is-visible');
-    setTimeout(() => {
+    fadeOutCleanupId = setTimeout(() => {
       try { video.pause(); video.removeAttribute('src'); video.load(); } catch (e) {}
+      fadeOutCleanupId = null;
     }, FADE_OUT_MS);
-    // Próxima playlist: 2min após começar o fade-out
-    setTimeout(showPlaylist, HIDDEN_MS);
+    nextScheduleId = setTimeout(showPlaylist, HIDDEN_MS);
   }
 
   function playIndex(i) {
     if (i >= PLAYLIST.length) {
-      // Playlist terminou — fade-out e agenda próxima
       hideAndScheduleNext();
       return;
     }
-    // Quando este vídeo terminar, passa ao seguinte sem fade
     video.onended = () => playIndex(i + 1);
     video.src = PLAYLIST[i];
     video.load();
@@ -2604,12 +2612,30 @@ updateTime(); setInterval(updateTime, 1000);
   }
 
   function showPlaylist() {
+    nextScheduleId = null;
+    isPlaying = true;
     video.classList.add('is-visible');
     playIndex(0);
   }
 
+  // Trigger manual: clique no logo força a playlist agora.
+  // Se já está a tocar, ignora (evita interrupção do que o utilizador está a ver).
+  function triggerNow() {
+    if (isPlaying) return;
+    clearPending();
+    // Garante que o vídeo está em estado limpo antes de começar
+    try { video.pause(); } catch (e) {}
+    showPlaylist();
+  }
+
+  const logoEl = document.querySelector('.h-logo');
+  if (logoEl) {
+    logoEl.style.cursor = 'pointer';
+    logoEl.addEventListener('click', triggerNow);
+  }
+
   // Arranca após 2min do load (deixa o dashboard estabilizar antes do 1º vídeo)
-  setTimeout(showPlaylist, HIDDEN_MS);
+  nextScheduleId = setTimeout(showPlaylist, HIDDEN_MS);
 })();
 
 /* ── SYNC: prazo+details = altura do zonas-panel ── */
