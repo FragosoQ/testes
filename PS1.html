@@ -446,6 +446,10 @@ main {
 .zona-card-list-items.is-grid-list .zona-card-list-item {
   text-align: left;
   padding: 0 2px;
+  /* Fonte mais pequena que a lista vertical (Planeamento), porque cada célula
+     da grid 4×3 é estreita. Tem de acomodar até "PR16" / "PR12.2" sem cortar. */
+  font-size: clamp(13px, 1.6vh, 18px);
+  letter-spacing: 0;
 }
 .zona-card-list-item {
   font-family: 'Barlow Condensed', sans-serif;
