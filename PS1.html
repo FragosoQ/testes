@@ -670,15 +670,11 @@ footer {
   width: auto;             /* ajustado por JS quando o vídeo carrega */
   z-index: 50;
   pointer-events: none;
-  opacity: 0;
-  transform: translateY(40px);
-  transition:
-    opacity 2.8s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 2.8s cubic-bezier(0.22, 1, 0.36, 1);
+  /* Sem fade: aparece/desaparece de imediato (display none/block) */
+  display: none;
 }
 .break-stage.is-visible {
-  opacity: 1;
-  transform: translateY(0);
+  display: block;
 }
 
 .break-video {
@@ -2591,7 +2587,7 @@ updateTime(); setInterval(updateTime, 1000);
   ];
   // Horários fixos Lisboa (HH, MM) em que a playlist deve aparecer
   const SCHEDULE_LISBON = [[9, 55], [13, 55]];
-  const FADE_OUT_MS = 2800;         // bate certo com transition do stage (CSS)
+  const FADE_OUT_MS = 0;            // sem fade — desaparece imediato
   const CROSSFADE_MS = 1500;        // bate certo com transition .break-video
 
   let nextScheduleId = null;
