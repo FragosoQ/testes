@@ -2583,7 +2583,10 @@ updateTime(); setInterval(updateTime, 1000);
   if (!stage || !videoA || !videoB) return;
 
   const PLAYLIST = [
-    'https://res.cloudinary.com/djxxk3ipz/video/upload/v1778168513/pikaso-untitled-project-2026-05-07_a2clz5.mp4',
+    // Cloudinary auto-optimization: qualidade automática + formato moderno (WebM/AV1
+    // onde suportado) + limite de 720p de largura. Reduz substancialmente o peso
+    // sem alteração visível em ecrãs até FullHD.
+    'https://res.cloudinary.com/djxxk3ipz/video/upload/q_auto,f_auto,w_720/v1778168513/pikaso-untitled-project-2026-05-07_a2clz5.mp4',
   ];
   // Horários fixos Lisboa (HH, MM) em que a playlist deve aparecer
   const SCHEDULE_LISBON = [[9, 55], [13, 55]];
@@ -2636,116 +2639,170 @@ updateTime(); setInterval(updateTime, 1000);
     stage.classList.remove('is-visible');
     fadeOutCleanupId = setTimeout(() => {
       [videoA, videoB].forEach(v => {
-        try { v.pause(); v.removeAttribute('src'); v.load(); } catch (e) {}
+        try {
+          v.pause();
+          v.removeAttribute('src');
+          v.load();
+          v.classList.remove('is-active');
+          v.onended = null;
+          v.ontimeupdate = null;
+          v.onerror = null;
+        } catch (e) {}
       });
       fadeOutCleanupId = null;
     }, FADE_OUT_MS);
-    // Próximo disparo é programado pelo schedulerLisbon, não automaticamente
     scheduleNextLisbon();
   }
 
+  // Limpa todos os listeners/timers associados a um slot
+  function detachSlot(slot) {
+    slot.onended = null;
+    slot.ontimeupdate = null;
+    slot.onerror = null;
+    slot.onpause = null;
+  }
+
+  // Watchdog: ID do timer global que força fade-out se nada acontecer
+  let watchdogId = null;
+  function clearWatchdog() {
+    if (watchdogId != null) { clearTimeout(watchdogId); watchdogId = null; }
+  }
+  function armWatchdog(slot, onTimeout) {
+    clearWatchdog();
+    // Se metadata ainda não chegou, usa fallback de 60s
+    const duration = Number.isFinite(slot.duration) && slot.duration > 0 ? slot.duration : 60;
+    const remainingMs = (duration - (slot.currentTime || 0)) * 1000 + 5000; // +5s margem
+    watchdogId = setTimeout(() => {
+      watchdogId = null;
+      console.warn('[break-video] watchdog: vídeo não terminou no tempo esperado, forçando fade-out');
+      onTimeout();
+    }, remainingMs);
+  }
+
   // Toca o vídeo no índice i no slot dado (videoA ou videoB).
-  // O outro slot torna-se inactivo. O timing do crossfade para o próximo
-  // é programado quando metadata + duração ficam disponíveis.
   function playSlot(slotCurrent, slotOther, i) {
     if (i >= PLAYLIST.length) {
+      clearWatchdog();
       hideAndScheduleNext();
       return;
     }
 
-    // Ativa o slot actual, desactiva o outro (crossfade via opacity)
     slotCurrent.classList.add('is-active');
     slotOther.classList.remove('is-active');
+    detachSlot(slotCurrent);
 
-    // Limpa eventos antigos
-    slotCurrent.onended = null;
-    slotCurrent.ontimeupdate = null;
-
-    // Carrega e arranca este slot
     slotCurrent.src = PLAYLIST[i];
     slotCurrent.load();
     tryPlay(slotCurrent);
     syncStageWidth(slotCurrent);
 
-    // Próximo vídeo a tocar
     const nextIdx = i + 1;
+    let advanced = false;
+    function advance() {
+      if (advanced) return;
+      advanced = true;
+      detachSlot(slotCurrent);
+      clearWatchdog();
+      playSlot(slotOther, slotCurrent, nextIdx);
+    }
+
+    // Quando metadata chegar, arma watchdog com a duração real
+    slotCurrent.addEventListener('loadedmetadata', () => {
+      armWatchdog(slotCurrent, advance);
+    }, { once: true });
+    // Watchdog inicial (caso metadata demore) — 60s genérico
+    armWatchdog(slotCurrent, advance);
 
     if (nextIdx < PLAYLIST.length) {
-      // Quando faltarem CROSSFADE_MS, pré-carrega o próximo no outro slot
-      // e arranca-o mudo, depois faz crossfade ao mesmo tempo que este termina.
+      // Crossfade quando faltarem CROSSFADE_MS para o fim
       let crossfadeStarted = false;
       slotCurrent.ontimeupdate = () => {
-        if (crossfadeStarted) return;
+        if (crossfadeStarted || advanced) return;
         const remaining = (slotCurrent.duration - slotCurrent.currentTime) * 1000;
         if (Number.isFinite(remaining) && remaining <= CROSSFADE_MS) {
           crossfadeStarted = true;
           slotCurrent.ontimeupdate = null;
 
-          // Carrega próximo no slot oposto e arranca
           slotOther.src = PLAYLIST[nextIdx];
           slotOther.load();
-          // Quando metadata estiver pronta, dá play e troca classes (crossfade arranca)
           const startNext = () => {
             slotOther.removeEventListener('canplay', startNext);
             tryPlay(slotOther);
-            // Faz crossfade — basta trocar classes, CSS trata da animação
             slotOther.classList.add('is-active');
             slotCurrent.classList.remove('is-active');
-            // E deixa o slotOther continuar o fluxo (próximo vídeo etc.)
-            scheduleNextAfter(slotOther, slotCurrent, nextIdx);
+            // Continua fluxo a partir do slotOther
+            advanced = true;
+            detachSlot(slotCurrent);
+            clearWatchdog();
+            // Chama playSlot mas sem trocar src (já está carregado), apenas para
+            // armar watchdog e listeners no slotOther:
+            playSlotContinue(slotOther, slotCurrent, nextIdx);
           };
           slotOther.addEventListener('canplay', startNext, { once: true });
         }
       };
-      // Fallback: se 'ended' disparar antes (vídeos curtos < CROSSFADE_MS), passa imediato
-      slotCurrent.onended = () => {
-        if (!crossfadeStarted) {
-          crossfadeStarted = true;
-          playSlot(slotOther, slotCurrent, nextIdx);
-        }
-      };
-    } else {
-      // Último vídeo da playlist — quando terminar, fade-out
-      slotCurrent.onended = () => hideAndScheduleNext();
     }
+
+    // Eventos de término / falha — todos chamam advance() (que despacha conforme nextIdx)
+    slotCurrent.onended = advance;
+    slotCurrent.onerror = (e) => {
+      console.warn('[break-video] erro no vídeo, a avançar:', e);
+      advance();
+    };
   }
 
-  // Helper: depois de fazer crossfade, ainda preciso de programar o próximo
-  // crossfade/fim a partir do slot que acabou de assumir o controlo.
-  function scheduleNextAfter(activeSlot, otherSlot, currentIdx) {
-    const nextIdx = currentIdx + 1;
-    activeSlot.onended = null;
-    activeSlot.ontimeupdate = null;
+  // Continua o fluxo para um slot que já foi carregado (usado depois do crossfade).
+  // Diferença para playSlot: não troca o src nem chama load().
+  function playSlotContinue(slotCurrent, slotOther, i) {
+    if (i >= PLAYLIST.length) {
+      clearWatchdog();
+      hideAndScheduleNext();
+      return;
+    }
+    detachSlot(slotCurrent);
+
+    const nextIdx = i + 1;
+    let advanced = false;
+    function advance() {
+      if (advanced) return;
+      advanced = true;
+      detachSlot(slotCurrent);
+      clearWatchdog();
+      playSlot(slotOther, slotCurrent, nextIdx);
+    }
+
+    armWatchdog(slotCurrent, advance);
 
     if (nextIdx < PLAYLIST.length) {
       let crossfadeStarted = false;
-      activeSlot.ontimeupdate = () => {
-        if (crossfadeStarted) return;
-        const remaining = (activeSlot.duration - activeSlot.currentTime) * 1000;
+      slotCurrent.ontimeupdate = () => {
+        if (crossfadeStarted || advanced) return;
+        const remaining = (slotCurrent.duration - slotCurrent.currentTime) * 1000;
         if (Number.isFinite(remaining) && remaining <= CROSSFADE_MS) {
           crossfadeStarted = true;
-          activeSlot.ontimeupdate = null;
-          otherSlot.src = PLAYLIST[nextIdx];
-          otherSlot.load();
+          slotCurrent.ontimeupdate = null;
+          slotOther.src = PLAYLIST[nextIdx];
+          slotOther.load();
           const startNext = () => {
-            otherSlot.removeEventListener('canplay', startNext);
-            tryPlay(otherSlot);
-            otherSlot.classList.add('is-active');
-            activeSlot.classList.remove('is-active');
-            scheduleNextAfter(otherSlot, activeSlot, nextIdx);
+            slotOther.removeEventListener('canplay', startNext);
+            tryPlay(slotOther);
+            slotOther.classList.add('is-active');
+            slotCurrent.classList.remove('is-active');
+            advanced = true;
+            detachSlot(slotCurrent);
+            clearWatchdog();
+            playSlotContinue(slotOther, slotCurrent, nextIdx);
           };
-          otherSlot.addEventListener('canplay', startNext, { once: true });
+          slotOther.addEventListener('canplay', startNext, { once: true });
         }
       };
-      activeSlot.onended = () => {
-        if (!crossfadeStarted) {
-          crossfadeStarted = true;
-          playSlot(otherSlot, activeSlot, nextIdx);
-        }
-      };
-    } else {
-      activeSlot.onended = () => hideAndScheduleNext();
     }
+
+    slotCurrent.onended = advance;
+    slotCurrent.onerror = (e) => {
+      console.warn('[break-video] erro no vídeo, a avançar:', e);
+      advance();
+    };
   }
 
   function showPlaylist() {
