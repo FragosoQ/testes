@@ -356,7 +356,8 @@ main {
 
 .zonas-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  /* 4 colunas: Cuba/Envolv | Estrutura/Interior | Planeamento (-2%) | Histórico/Prox.Pri (+2%) */
+  grid-template-columns: 1fr 1fr 0.92fr 1.08fr;
   grid-auto-rows: 1fr;
   gap: clamp(10px, 1.6vh, 16px) clamp(14px, 2vw, 24px);
   flex: 1;
@@ -446,10 +447,6 @@ main {
 .zona-card-list-items.is-grid-list .zona-card-list-item {
   text-align: left;
   padding: 0 2px;
-  /* Fonte mais pequena que a lista vertical (Planeamento), porque cada célula
-     da grid 4×3 é estreita. Tem de acomodar até "PR16" / "PR12.2" sem cortar. */
-  font-size: clamp(13px, 1.6vh, 18px);
-  letter-spacing: 0;
 }
 .zona-card-list-item {
   font-family: 'Barlow Condensed', sans-serif;
