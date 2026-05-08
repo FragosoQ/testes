@@ -444,7 +444,7 @@ main {
   align-items: center;
 }
 .zona-card-list-items.is-grid-list .zona-card-list-item {
-  text-align: center;
+  text-align: left;
   padding: 0 2px;
 }
 .zona-card-list-item {
@@ -1926,6 +1926,8 @@ const ZONA_CONFIGS = [
       ignoreLabels: ['%'],
       hideHeader: true,
       gridLayout: { cols: 4, rows: 3, flow: 'column' },
+      // Mostra apenas colunas cuja célula da linha 2 tem valor literal 1
+      matchValue: 1,
       limit: 12,
     },
   },
@@ -2096,10 +2098,21 @@ async function fetchZonaListValues(source) {
     const ignore = new Set((source.ignoreLabels || []).map(s => String(s).trim()));
     const firstRow = table.rows[0]; // linha 2 da Sheet (gviz com headers=1 desloca)
     const limit = Math.max(1, source.limit || 50);
+    // matchValue: se definido (ex: 1), só mostra colunas cuja célula da linha 2
+    // tenha esse valor exacto. Compara como número (aceita 1, "1", "1.0").
+    const matchValue = source.matchValue;
+    const hasMatchFilter = matchValue !== undefined && matchValue !== null;
     const values = [];
     for (let i = startIdx; i <= endIdx && i < table.cols.length && values.length < limit; i += 1) {
       const value = getValueFromRow(firstRow, i);
       if (value == null || String(value).trim() === '') continue;
+
+      if (hasMatchFilter) {
+        const num = typeof value === 'number'
+          ? value
+          : Number(String(value).trim().replace(',', '.'));
+        if (!Number.isFinite(num) || num !== Number(matchValue)) continue;
+      }
 
       const col = table.cols[i] || {};
       const rawLabel = col.label != null && String(col.label).trim() !== ''
@@ -2570,11 +2583,10 @@ updateTime(); setInterval(updateTime, 1000);
   if (!stage || !videoA || !videoB) return;
 
   const PLAYLIST = [
-    'https://res.cloudinary.com/djxxk3ipz/video/upload/v1777992748/magnific_exercise-1-neck-tension-r_2918326826_qzfkk1.mp4',
-    'https://res.cloudinary.com/djxxk3ipz/video/upload/v1777993659/magnific_exercise-3-spinal-mobilit_2925610676_hwo9vp.mp4',
+    'https://res.cloudinary.com/djxxk3ipz/video/upload/v1778168513/pikaso-untitled-project-2026-05-07_a2clz5.mp4',
   ];
   // Horários fixos Lisboa (HH, MM) em que a playlist deve aparecer
-  const SCHEDULE_LISBON = [[9, 55], [15, 55]];
+  const SCHEDULE_LISBON = [[9, 55], [13, 55]];
   const FADE_OUT_MS = 2800;         // bate certo com transition do stage (CSS)
   const CROSSFADE_MS = 1500;        // bate certo com transition .break-video
 
