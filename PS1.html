@@ -2487,7 +2487,7 @@ function renderSheetData(sheetRow) {
     updateDeadline(inicio, previsto);
 
     const { modelo, lote } = parseModeloLote(modeloLote);
-    modelDataAvailable = Boolean(model);
+    modelDataAvailable = Boolean(modelo);
     renderText(modelEl, modelo || MODEL_PLACEHOLDER, MODEL_PLACEHOLDER);
     loadAndRenderPaises();
     if (loteEl) {
