@@ -1875,6 +1875,7 @@ const SHEET_CONFIG = { id: '1GQUB52a2gKR429bjqJrNkbP5rjR7Z_4v85z9M7_Cr8Y', tab: 
 const FALLBACK_EV = 46;
 const evEl = document.getElementById('evNum');
 const modelEl = document.querySelector('.id-modelo');
+let modelDataAvailable = false;
 const MODEL_FALLBACK = modelEl ? modelEl.textContent.trim() : 'MWS715 SDS EXD DRD';
 const loteEl = document.querySelector('.id-lote');
 const LOTE_FALLBACK = loteEl ? loteEl.textContent.trim() : 'Lote · 26L_1';
@@ -2363,11 +2364,12 @@ function setPaisEmpty() {
   paisContainerEl.classList.remove('is-grid');
   paisContainerEl.innerHTML = `
     <span class="id-flag"></span>
-    <span class="id-pais-info">${PAIS_PLACEHOLDER}</span>`;
+    <span class="id-pais-info">${modelDataAvailable ? PAIS_PLACEHOLDER : '--'}</span>`;
 }
 
 function setPaisSingle(pais, idioma) {
   if (!paisContainerEl) return;
+  if (!modelDataAvailable) { setPaisEmpty(); return; }
   paisContainerEl.classList.remove('is-grid');
   const flag = getCountryFlag(pais) || '';
   const idiomaTxt = idioma ? idioma.toUpperCase() : '—';
@@ -2378,6 +2380,7 @@ function setPaisSingle(pais, idioma) {
 
 function setPaisGrid(pares) {
   if (!paisContainerEl) return;
+  if (!modelDataAvailable) { setPaisEmpty(); return; }
   paisContainerEl.classList.add('is-grid');
   paisContainerEl.innerHTML = pares.map(p => {
     const flag = getCountryFlag(p.pais) || '';
@@ -2438,7 +2441,6 @@ function renderSheetData(sheetRow) {
   // Modelo e Lote vêm do PS1!D (mais abaixo, no fetch ao PS1)
   // Evolução Global vem do PS1!AK (também no fetch ao PS1)
   // Países vêm de montagemEditável (refrescados pelo seu próprio watcher — ver loadAndRenderPaises)
-  loadAndRenderPaises();
 
   // Datas + Modelo/Lote vindos do PS1
   const DATE_PLACEHOLDER = '-- / -- / ----';
@@ -2457,7 +2459,7 @@ function renderSheetData(sheetRow) {
   // Se não terminar em "<2 dígitos>L", devolve { modelo: <string toda>, lote: null }.
   function parseModeloLote(raw) {
     const text = raw == null ? '' : String(raw).trim();
-    if (text === '') return { modelo: '', lote: null };
+    if (text === '' || /^[-–—]+$/.test(text)) return { modelo: '', lote: null };
     // Padrão: começa pela parte do modelo, segue " - " (espaços flexíveis), 2 dígitos + L no fim
     const m = text.match(/^(.*?)\s*-\s*(\d{2}L)$/);
     if (m) {
@@ -2485,7 +2487,9 @@ function renderSheetData(sheetRow) {
     updateDeadline(inicio, previsto);
 
     const { modelo, lote } = parseModeloLote(modeloLote);
+    modelDataAvailable = Boolean(model);
     renderText(modelEl, modelo || MODEL_PLACEHOLDER, MODEL_PLACEHOLDER);
+    loadAndRenderPaises();
     if (loteEl) {
       loteEl.innerHTML = lote
         ? `Lote &nbsp;·&nbsp; ${escapeHtml(lote)}`
@@ -2506,6 +2510,8 @@ function renderSheetData(sheetRow) {
     updateEvolucao(geralPct != null ? geralPct : 0);
   }).catch(err => {
     console.warn('Falha a carregar dados do PS1:', err);
+    modelDataAvailable = false;
+    loadAndRenderPaises();
     renderText(dataInicioEl, DATE_PLACEHOLDER, DATE_PLACEHOLDER);
     renderText(dataPrevistaEl, DATE_PLACEHOLDER, DATE_PLACEHOLDER);
     updateDeadline(null, null);
