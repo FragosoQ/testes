@@ -367,6 +367,27 @@ main {
   padding: clamp(10px, 1.5vh, 20px) 0;
 }
 
+.globe-title {
+  max-width: calc(100% - clamp(56px, 10vw, 100px));
+  font-size: clamp(14px, 1.8vh, 20px);
+  font-weight: 700;
+  letter-spacing: 5px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.75);
+  text-align: center;
+}
+
+.globe-rank {
+  position: absolute;
+  top: clamp(8px, 1.5vh, 16px);
+  right: clamp(12px, 2vw, 24px);
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(42px, 5.5vw, 92px);
+  line-height: 1;
+  color: rgba(255,255,255,0.8);
+  pointer-events: none;
+}
+
 /* PRAZO */
 .prazo-section {
   padding: clamp(14px, 2.2vh, 24px) clamp(18px, 2vw, 28px);
@@ -611,6 +632,10 @@ footer {
     font-size: clamp(28px, 8vw, 46px);
   }
 
+  .globe-rank {
+    font-size: clamp(28px, 8vw, 46px);
+  }
+
   .id-cliente {
     font-size: clamp(18px, 5vw, 36px);
   }
@@ -706,7 +731,8 @@ footer {
 
       <!-- EVOLUÇÃO -->
       <div class="globe-section" style="flex-direction:column;gap:clamp(6px,1vh,10px);">
-        <div style="font-size:clamp(14px,1.8vh,20px);font-weight:700;letter-spacing:5px;text-transform:uppercase;color:rgba(255,255,255,0.75);">Evolução Global</div>
+        <div class="globe-title">Evolução Global</div>
+        <div class="globe-rank">1</div>
         <div id="evNum" style="font-family:'Bebas Neue',sans-serif;font-size:clamp(140px,22vh,340px);line-height:.85;letter-spacing:-2px;">46%</div>
         <div id="statusLabel" style="font-size:clamp(15px,2vh,22px);letter-spacing:4px;color:rgba(255,255,255,0.75);text-transform:uppercase;">Em Curso · ON</div>
       </div>
