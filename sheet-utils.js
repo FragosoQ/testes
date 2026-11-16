@@ -483,6 +483,8 @@ function getCountryFlag(countryName) {
     'macau': 'MO',~
     'austrália': 'AU',
     'australia': 'AU',
+    'russia': 'RU',
+    'rússia': 'RU',
     'macao': 'MO'
   };
 
