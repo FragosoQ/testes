@@ -480,7 +480,9 @@ function getCountryFlag(countryName) {
     'sao tome e principe': 'ST',
     'timor-leste': 'TL',
     'timor leste': 'TL',
-    'macau': 'MO',
+    'macau': 'MO',~
+    'austrália': 'AU',
+    'australia': 'AU',
     'macao': 'MO'
   };
 
